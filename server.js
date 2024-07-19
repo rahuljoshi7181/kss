@@ -8,6 +8,8 @@ const logger = require('./logger')
 const errorMessages = require('./messages/messages')
 const redisPlugin = require('./redis/plugin')
 const rateLimitor = require('hapi-rate-limitor')
+const jwt = require('jsonwebtoken')
+const R = require('ramda')
 const cors = require('./cors')
 
 module.exports = async (config, { enableRatelimit = true } = {}) => {
@@ -77,6 +79,31 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
                 // Handle successful responses
             }
             return h.continue
+        })
+
+        server.ext('onRequest', (request, h) => {
+            const authorization = request.headers.authorization
+            const bypassRoutes = ['register', 'generate-token']
+            const currentReqPath = R.last(R.split('/')(request.path))
+            if (bypassRoutes.includes(currentReqPath)) {
+                return h.continue
+            }
+
+            if (authorization) {
+                const token = authorization.replace('Bearer ', '')
+                try {
+                    const decoded = jwt.verify(token, config.secret)
+                    request.auth = { credentials: decoded }
+                    return h.continue
+                } catch (err) {
+                    console.log(err)
+                    throw errorMessages.createUnauthorizedError(err)
+                }
+            } else {
+                throw errorMessages.createUnauthorizedError(
+                    'Failed to authorize the request.'
+                )
+            }
         })
 
         await server.register(pluginsList, {

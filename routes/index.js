@@ -1,5 +1,6 @@
 const { handleRequest } = require('../handle-request')
 const login = require('./login.js')
+const users = require('./users.js')
 
 function routeWithCorrelationId(routes) {
     return routes.map((route) => {
@@ -17,6 +18,7 @@ module.exports = {
     name: 'routes',
     version: '1.0.0',
     register: async (server) => {
-        server.route(routeWithCorrelationId(login))
+        server.route(routeWithCorrelationId(login)),
+            server.route(routeWithCorrelationId(users))
     },
 }

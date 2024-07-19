@@ -1,6 +1,14 @@
 const Boom = require('@hapi/boom')
 const R = require('ramda')
 
+const successResponse = (data, message, statusCode = 200) => {
+    return {
+        statusCode,
+        message: message | 'Success', // Consider adding a more specific message based on context
+        data,
+    }
+}
+
 const createBadImplementationError = (message, cause) => {
     const error = Boom.badImplementation()
     error.reformat()
@@ -33,7 +41,7 @@ const createNotFoundError = (message, cause) => {
     return error
 }
 
-const createBadDataError = (mesage, data, cause) => {
+const createBadDataError = (message, data, cause) => {
     const error = Boom.badData(message, data)
     error.reformat()
     error.output.payload.message = message
@@ -71,4 +79,5 @@ module.exports = {
     createBadDataError,
     createMethodNotAllowedError,
     createBadRequestError,
+    successResponse,
 }
