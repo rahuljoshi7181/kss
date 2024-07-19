@@ -31,6 +31,12 @@ module.exports = [
                 payload: Joi.object({
                     mobile: Joi.string().required(),
                     password: Joi.string().required(),
+                    user_type: Joi.number().integer(),
+                    address: Joi.string(),
+                    city: Joi.number().integer().required(),
+                    postal_code: Joi.number().integer(),
+                    last_login: Joi.date().required(),
+                    created_by: Joi.number().integer().required(),
                 }),
             },
         },

@@ -6,7 +6,8 @@
   "scripts": {
     "format": "prettier --write .",
     "start": "nodemon --max-old-space-size=24756 index.js | pino-pretty",
-    "kss": "nodemon server.js",
+    "debug":"nodemon --inspect index.js",
+    "kss": "nodemon index.js",
     "docker:build": "docker build -t user-api .",
     "docker:compose:up": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",

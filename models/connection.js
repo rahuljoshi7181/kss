@@ -2,13 +2,14 @@
 
 const mysql = require('mysql2/promise')
 const logger = require('../logger')
-
+const config = require('../config')
 // MySQL configuration
 const dbConfig = {
-    host: 'localhost',
-    user: 'root',
-    password: 'your_mysql_root_password',
-    database: 'user_api',
+    host: config.db_host,
+    user: config.db_user,
+    password: config.db_password,
+    database: config.db_database,
+    port: config.db_port,
 }
 
 /// Plugin function to register MySQL connection

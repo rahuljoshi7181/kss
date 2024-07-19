@@ -1,6 +1,5 @@
 const mysql = require('mysql2/promise')
 
-console.log('HERE')
 const connection = mysql.createPool({
     host: 'mysql', // Replace with your MySQL host
     user: 'root', // Replace with your MySQL username
