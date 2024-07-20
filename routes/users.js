@@ -1,4 +1,3 @@
-const Joi = require('joi')
 const { profile } = require('../handlers/user_profile') // Ensure this path is correct
 
 module.exports = [

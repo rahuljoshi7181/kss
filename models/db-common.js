@@ -1,5 +1,6 @@
 const executeQuery = async (query, params, db) => {
     try {
+        console.log('HELLO', 'ss')
         const [results] = await db.execute(query, params)
         return results
     } catch (err) {
@@ -31,9 +32,9 @@ const getRecordById = async (table, idColumn, id, connection) => {
     return executeQuery(query, [id], connection)
 }
 
-const getAllRecords = async (table) => {
+const getAllRecords = async (table, connection) => {
     const query = `SELECT * FROM ${table}`
-    return executeQuery(query, connection)
+    return executeQuery(query, '', connection)
 }
 
 module.exports = {

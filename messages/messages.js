@@ -1,11 +1,10 @@
 const Boom = require('@hapi/boom')
-const R = require('ramda')
-
+const logger = require('../logger')
 const successResponse = (data, message, statusCode = 200) => {
     return {
         statusCode,
-        message: message | 'Success', // Consider adding a more specific message based on context
-        data,
+        message: message || 'Success', // Consider adding a more specific message based on context
+        data: data || {},
     }
 }
 
@@ -14,13 +13,15 @@ const createBadImplementationError = (message, cause) => {
     error.reformat()
     error.output.payload.message = message
     error.cause = cause
+    logger.error(error.output.payload.message)
     return error
 }
-const createForbiddenError = (message, cause, locale) => {
+const createForbiddenError = (message, cause) => {
     const error = Boom.forbidden()
     error.reformat()
     error.output.payload.message = message
     error.cause = cause
+    logger.error(error.output.payload.message)
     return error
 }
 
@@ -29,6 +30,7 @@ const createUnauthorizedError = (message, cause) => {
     error.reformat()
     error.cause = cause
     error.output.payload.message = message || 'Failed to authorize the request.'
+    logger.error(message)
     return error
 }
 
@@ -38,6 +40,7 @@ const createNotFoundError = (message, cause) => {
     error.cause = cause
     error.output.payload.message =
         message || "Requested resource doesn't exist."
+    logger.error(error.output.payload.message)
     return error
 }
 
@@ -46,6 +49,7 @@ const createBadDataError = (message, data, cause) => {
     error.reformat()
     error.output.payload.message = message
     error.cause = cause
+    logger.error(error.output.payload.message)
     return error
 }
 
@@ -59,7 +63,7 @@ const createBadRequestError = (message, cause, includeCause = false) => {
     }
 
     error.output.payload.message = message || 'Invalid request payload input'
-
+    logger.error(error.output.payload.message)
     return error
 }
 
@@ -68,6 +72,7 @@ const createMethodNotAllowedError = (message, cause) => {
     error.reformat()
     error.output.payload.message = message
     error.cause = cause
+    logger.error(error.output.payload.message)
     return error
 }
 

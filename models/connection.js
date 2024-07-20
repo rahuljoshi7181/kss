@@ -1,4 +1,4 @@
-// mysql.js
+/* eslint-disable */
 
 const mysql = require('mysql2/promise')
 const logger = require('../logger')

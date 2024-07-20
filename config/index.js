@@ -1,26 +1,4 @@
-const fs = require('fs')
-const path = require('path')
 require('dotenv').config()
-const crypto = require('crypto')
-const getRandomkey = () => {
-    let keyInBytes = ''
-
-    const hash = crypto.createHash('sha256')
-
-    hash.on('readable', () => {
-        const data = hash.read()
-
-        if (data) {
-            keyInBytes = data.toString('hex')
-        }
-    })
-
-    hash.write(Math.random() + '')
-
-    hash.end()
-
-    return keyInBytes
-}
 
 const {
     MYSQL_HOST,
@@ -29,7 +7,7 @@ const {
     MYSQL_DATABASE,
     MYSQL_PORT,
     REDIS_HOST,
-    host = 'localhost',
+    REDIS_PORT,
     PORT = 8803,
     isProd = false,
     HOST = 'localhost',
@@ -45,6 +23,9 @@ const objconf = {
     db_password: MYSQL_PASSWORD,
     db_database: MYSQL_DATABASE,
     db_port: MYSQL_PORT,
+    redis_host: REDIS_HOST,
+    redis_port: REDIS_PORT,
+    isProd: isProd,
 }
 
 module.exports = objconf

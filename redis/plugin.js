@@ -1,5 +1,5 @@
 const { buildRedisConnection } = require('./redis-client')
-
+/* eslint-disable */
 module.exports = {
     name: 'redis',
     register: async (server) => {

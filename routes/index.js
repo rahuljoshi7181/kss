@@ -1,7 +1,7 @@
 const { handleRequest } = require('../handle-request')
 const login = require('./login.js')
 const users = require('./users.js')
-
+const fruits = require('./fruits.js')
 function routeWithCorrelationId(routes) {
     return routes.map((route) => {
         return {
@@ -19,6 +19,7 @@ module.exports = {
     version: '1.0.0',
     register: async (server) => {
         server.route(routeWithCorrelationId(login)),
-            server.route(routeWithCorrelationId(users))
+            server.route(routeWithCorrelationId(users)),
+            server.route(routeWithCorrelationId(fruits))
     },
 }

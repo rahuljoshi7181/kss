@@ -1,8 +1,5 @@
-const config = require('../config')
-const logger = require('../logger')
 const R = require('ramda')
 const messages = require('../messages/messages')
-const boom = require('@hapi/boom')
 const { getRecordById } = require('../models/db-common')
 
 const profile = async (req, h) => {

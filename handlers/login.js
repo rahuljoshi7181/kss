@@ -4,18 +4,17 @@ const jwt = require('jsonwebtoken')
 const logger = require('../logger')
 const R = require('ramda')
 const messages = require('../messages/messages')
-const { insertRecord, getRecordById } = require('../models/db-common')
-const boom = require('@hapi/boom')
-
-const login = async (req, h) => {
-    return 'TEST' + config.secret
-}
+const {
+    insertRecord,
+    getRecordById,
+    updateRecord,
+} = require('../models/db-common')
+const moment = require('moment')
 
 const jwtGenerate = async (req, h) => {
     const { mobile, password } = req.payload
     const connection = await req.server.mysqlPool.getConnection()
     const [rows] = await getRecordById('users', 'username', mobile, connection)
-    connection.release()
 
     if (rows !== undefined && R.isEmpty(rows)) {
         throw messages.createNotFoundError('User not found')
@@ -23,6 +22,12 @@ const jwtGenerate = async (req, h) => {
         const token = jwt.sign({ id: rows.id }, config.secret, {
             expiresIn: '1h',
         })
+        let payload = {
+            last_login: moment().format('YYYY-MM-DD HH:mm:ss'),
+            login_count: rows.login_count + 1,
+        }
+        await updateRecord('users', payload, 'id', rows.id, connection)
+        connection.release()
         return h
             .response(
                 messages.successResponse(
@@ -32,6 +37,7 @@ const jwtGenerate = async (req, h) => {
             )
             .code(201)
     } else {
+        connection.release()
         throw messages.createNotFoundError('Invalid credentials')
     }
 }
@@ -71,7 +77,6 @@ const user_register = async (req, h) => {
 }
 
 module.exports = {
-    login,
     jwtGenerate,
     user_register,
 }
