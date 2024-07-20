@@ -9,12 +9,7 @@ const {
     getRecordById,
     updateRecord,
 } = require('../models/db-common')
-const boom = require('@hapi/boom')
 const moment = require('moment')
-
-const login = async (req, h) => {
-    return 'TEST' + config.secret
-}
 
 const jwtGenerate = async (req, h) => {
     const { mobile, password } = req.payload
@@ -45,7 +40,6 @@ const jwtGenerate = async (req, h) => {
         connection.release()
         throw messages.createNotFoundError('Invalid credentials')
     }
-    connection.release()
 }
 
 const user_register = async (req, h) => {
@@ -83,7 +77,6 @@ const user_register = async (req, h) => {
 }
 
 module.exports = {
-    login,
     jwtGenerate,
     user_register,
 }

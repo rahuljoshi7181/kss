@@ -1,5 +1,3 @@
-const config = require('../config')
-const logger = require('../logger')
 const R = require('ramda')
 const messages = require('../messages/messages')
 const {
@@ -8,13 +6,11 @@ const {
     getAllRecords,
     updateRecord,
 } = require('../models/db-common')
-const boom = require('@hapi/boom')
 const [table_name, fruit_category] = ['fruits', 'fruit_categories']
 
 const getFruits = async (req, h) => {
-    const { id } = req.auth.credentials
     const connection = await req.server.mysqlPool.getConnection()
-    const [rows] = await getAllRecords(table_name, condition, connection)
+    const [rows] = await getAllRecords(table_name, connection)
     await connection.release()
     if (rows !== undefined && R.isEmpty(rows)) {
         throw messages.createNotFoundError('Fruits not found')
@@ -28,7 +24,7 @@ const getFruits = async (req, h) => {
 }
 
 const save_fruits = async (req, h) => {
-    let { name, name_hindi } = req.payload
+    let { name } = req.payload
     const { id } = req.auth.credentials
     let payload = { ...req.payload, created_by: id }
 
@@ -118,7 +114,7 @@ const save_fruit_category = async (req, h) => {
     }
 }
 
-update_fruits_categories = async (req, h) => {
+const update_fruits_categories = async (req, h) => {
     let { row_id, name } = req.payload
     const { id } = req.auth.credentials
     let payload = { ...req.payload, updated_by: id }

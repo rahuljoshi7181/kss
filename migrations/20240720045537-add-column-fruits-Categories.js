@@ -1,5 +1,5 @@
 'use strict'
-
+/* eslint-disable */
 var dbm
 var type
 var seed
