@@ -1,6 +1,6 @@
 const executeQuery = async (query, params, db) => {
     try {
-        console.log('HELLO', 'sss')
+        console.log('HELLO', 'ss')
         const [results] = await db.execute(query, params)
         return results
     } catch (err) {
