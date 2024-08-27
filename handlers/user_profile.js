@@ -160,7 +160,7 @@ const isUserExists = async (req, h) => {
             username,
             connection
         )
-        console.log(rows)
+
         if (isObjectNotEmptyOrUndefined(rows)) {
             throw Boom.conflict('User already exists!')
         } else {

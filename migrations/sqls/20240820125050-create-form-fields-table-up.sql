@@ -10,6 +10,8 @@ CREATE TABLE form_fields (
     options_query TEXT DEFAULT NULL,
     parent_field_id INT DEFAULT NULL,
     dependent_field VARCHAR(100),
+    dependent_table VARCHAR(100),
+    error_message VARCHAR(200),
     required BOOLEAN DEFAULT FALSE,
     disabled BOOLEAN DEFAULT FALSE,
     options TEXT,

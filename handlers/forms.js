@@ -34,6 +34,7 @@ const getForms = async (req, h) => {
             { name: `${table}.form_title`, alias: 'form_title' },
             { name: `${form_sections}.id`, alias: 'section_id' },
             { name: `${form_sections}.section_title`, alias: 'section_title' },
+            { name: `${form_field}.id`, alias: 'field_id' },
             { name: `${form_field}.label`, alias: 'field_label' },
             { name: `${form_field}.field_name`, alias: 'field' },
             { name: `${form_field}.field_type`, alias: 'type' },
@@ -42,6 +43,7 @@ const getForms = async (req, h) => {
             { name: `${form_field}.options`, alias: 'options' },
             { name: `${form_field}.dependent_field`, alias: 'dependent_field' },
             { name: `${form_field}.field_value`, alias: 'field_value' },
+            { name: `${form_field}.error_message`, alias: 'error_message' },
             {
                 name: `${form_field}.options_source_table`,
                 alias: 'options_source_table',
@@ -92,11 +94,13 @@ const getForms = async (req, h) => {
             }
 
             sectionsMap[field.section_id].fields.push({
+                field: field.field_id,
                 field_id: field.section_id, // Assuming field_id is section_id for uniqueness in this example
                 label: field.field_label,
                 field_name: field.field,
                 field_type: field.type,
                 placeholder: field.field_placeholder,
+                error_message: field.error_message,
                 dependent_field: field.dependent_field,
                 required: field.required === 1,
                 disabled: false, // Assuming no disabled field in provided data
