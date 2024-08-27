@@ -65,7 +65,7 @@ const getForms = async (req, h) => {
             pagination: false,
             where: whereCondition,
         })
-
+        console.log(rows, ' **************** ')
         const transformedData = {
             form_id: rows[0].form_id,
             form_title: rows[0].form_title,
