@@ -1,5 +1,6 @@
 const R = require('ramda')
 const messages = require('../messages/messages')
+//const logger = require('../logger')
 const {
     insertRecord,
     getRecordById,
@@ -19,7 +20,7 @@ const getFruits = async (req, h) => {
             .response(
                 messages.successResponse(rows, `Fruits fetched successfully !`)
             )
-            .code(201)
+            .code(200)
     }
 }
 
@@ -69,7 +70,6 @@ const update_fruits = async (req, h) => {
         await connection.beginTransaction()
         await updateRecord(table_name, payload, 'id', rows.id, connection)
         await connection.commit()
-        await connection.release()
         return h
             .response(
                 messages.successResponse(
@@ -81,6 +81,9 @@ const update_fruits = async (req, h) => {
     } catch (error) {
         await connection.rollback()
         throw messages.createBadRequestError(error)
+    } finally {
+        // Ensure the connection is released even if an error occurs
+        if (connection) await connection.release()
     }
 }
 
@@ -99,7 +102,6 @@ const save_fruit_category = async (req, h) => {
         await connection.beginTransaction()
         await insertRecord(fruit_category, payload, connection)
         await connection.commit()
-        await connection.release()
         return h
             .response(
                 messages.successResponse(
@@ -111,6 +113,9 @@ const save_fruit_category = async (req, h) => {
     } catch (error) {
         await connection.rollback()
         throw messages.createBadRequestError(error)
+    } finally {
+        // Ensure the connection is released even if an error occurs
+        if (connection) await connection.release()
     }
 }
 
@@ -132,7 +137,6 @@ const update_fruits_categories = async (req, h) => {
         await connection.beginTransaction()
         await updateRecord(fruit_category, payload, 'id', rows.id, connection)
         await connection.commit()
-        await connection.release()
         return h
             .response(
                 messages.successResponse(
@@ -144,6 +148,8 @@ const update_fruits_categories = async (req, h) => {
     } catch (error) {
         await connection.rollback()
         throw messages.createBadRequestError(error)
+    } finally {
+        if (connection) await connection.release()
     }
 }
 

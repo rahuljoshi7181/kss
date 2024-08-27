@@ -2,6 +2,7 @@ const { handleRequest } = require('../handle-request')
 const login = require('./login.js')
 const users = require('./users.js')
 const fruits = require('./fruits.js')
+const forms = require('./forms.js')
 
 const health = [
     {
@@ -37,6 +38,7 @@ module.exports = {
         server.route(routeWithCorrelationId(login)),
             server.route(routeWithCorrelationId(users)),
             server.route(routeWithCorrelationId(fruits)),
-            server.route(routeWithCorrelationId(health))
+            server.route(routeWithCorrelationId(health)),
+            server.route(routeWithCorrelationId(forms))
     },
 }

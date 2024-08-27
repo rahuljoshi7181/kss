@@ -4,6 +4,7 @@ const Vision = require('@hapi/vision')
 const routes = require('./routes')
 const hapipino = require('hapi-pino')
 const mysqlPlugin = require('./models/connection')
+const s3Plugin = require('./helper/aws')
 const logger = require('./logger')
 const errorMessages = require('./messages/messages')
 const redisPlugin = require('./redis/plugin')
@@ -52,6 +53,7 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
                 },
             },
             mysqlPlugin,
+            s3Plugin,
             redisPlugin,
             cors,
             Inert,
@@ -76,7 +78,7 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
             if (response.isBoom) {
                 // Handle error responses
             } else {
-                // Handle successful responses
+                //const successPayload = response.source
             }
             return h.continue
         })
@@ -85,6 +87,7 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
             const authorization = request.headers.authorization
             const bypassRoutes = ['register', 'generate-token']
             const currentReqPath = R.last(R.split('/')(request.path))
+
             if (bypassRoutes.includes(currentReqPath)) {
                 return h.continue
             }
@@ -96,8 +99,7 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
                     request.auth = { credentials: decoded }
                     return h.continue
                 } catch (err) {
-                    console.log(err)
-                    throw errorMessages.createUnauthorizedError(err)
+                    throw errorMessages.createUnauthorizedError('Token expired')
                 }
             } else {
                 throw errorMessages.createUnauthorizedError(

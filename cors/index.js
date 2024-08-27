@@ -1,17 +1,10 @@
 const Boom = require('@hapi/boom')
-const allowedOrigins = ['localhost', 'rahul']
-const isNotAllowedOrigin = (origin) => {
-    if (
-        origin &&
-        !(
-            origin.endsWith(allowedOrigins[0]) ||
-            origin.endsWith(allowedOrigins[1])
-        )
-    ) {
-        return true
-    }
-
-    return false
+const allowedOrigins = ['localhost:3000', 'rahul']
+// Example helper function to check if origin is allowed
+function isNotAllowedOrigin(origin) {
+    return !allowedOrigins.includes(
+        origin.split('//')[1] || origin.split('//')[0]
+    )
 }
 
 module.exports = {
@@ -19,31 +12,31 @@ module.exports = {
 
     register: async (server) => {
         server.ext('onPreResponse', async (request, h) => {
-            // depending on whether we have a boom or not,
+            try {
+                const response = request.response.isBoom
+                    ? request.response.output
+                    : request.response
 
-            // headers need to be set differently.
+                const requestOrigin =
+                    request.headers.origin ||
+                    (request.headers.referer &&
+                        request.headers.referer.split('/')[2])
 
-            const response = request.response.isBoom
-                ? request.response.output
-                : request.response
-            const requestOrigin =
-                request.headers.origin || request.headers.referer?.split('/')[2]
-
-            if (isNotAllowedOrigin(requestOrigin)) {
-                throw Boom.unauthorized(
-                    'You are not authorized to perform this operation'
-                )
-            } else {
-                const origin = requestOrigin?.split(',').filter(function (str) {
-                    return (
-                        str.endswith(allowedOrigins[0]) ||
-                        str.endswith(allowedOrigins[1])
+                if (
+                    requestOrigin !== undefined &&
+                    isNotAllowedOrigin(requestOrigin)
+                ) {
+                    throw Boom.unauthorized(
+                        'You are not authorized to perform this operation'
                     )
-                })
-
-                response.headers['access-control-allow-origin'] = origin
+                } else {
+                    response.headers['access-control-allow-origin'] =
+                        requestOrigin
+                }
+                return h.continue
+            } catch (error) {
+                throw Boom.unauthorized('Internal Server Error')
             }
-            return h.continue
         })
     },
 }

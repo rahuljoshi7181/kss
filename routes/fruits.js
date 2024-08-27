@@ -23,8 +23,12 @@ module.exports = [
             handler: save_fruits,
             validate: {
                 payload: Joi.object({
-                    name: Joi.string().required(),
-                    name_hindi: Joi.string().required(),
+                    name: Joi.string()
+                        .trim()
+                        .max(30)
+                        .regex(/^[a-zA-Z0-9_]+$/)
+                        .required(),
+                    name_hindi: Joi.string().trim().required(),
                 }),
             },
         },
@@ -36,8 +40,8 @@ module.exports = [
             handler: update_fruits,
             validate: {
                 payload: Joi.object({
-                    name: Joi.string().required(),
-                    name_hindi: Joi.string().required(),
+                    name: Joi.string().trim().required(),
+                    name_hindi: Joi.string().trim().required(),
                     row_id: Joi.number().integer().required(),
                 }),
             },
