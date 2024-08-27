@@ -16,8 +16,8 @@ module.exports = [
             handler: jwtGenerate,
             validate: {
                 payload: Joi.object({
-                    mobile: Joi.string().required(),
-                    password: Joi.string().required(),
+                    mobile: Joi.string().trim().required(),
+                    password: Joi.string().trim().required(),
                 }),
             },
         },

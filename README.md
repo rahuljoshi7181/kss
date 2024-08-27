@@ -51,6 +51,9 @@ To manage database migrations, follow these steps:
     ```bash
     npx db-migrate down
     ```
+4
+    db-migrate create add-new-column
+    
 
 ## Health Check API
 

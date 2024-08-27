@@ -12,6 +12,10 @@ const {
     isProd = false,
     HOST = 'localhost',
     JWT_SECRET,
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AWS_REGION,
+    S3_BUCKET_NAME,
 } = process.env
 
 const objconf = {
@@ -26,6 +30,10 @@ const objconf = {
     redis_host: REDIS_HOST,
     redis_port: REDIS_PORT,
     isProd: isProd,
+    AWS_KEY: AWS_ACCESS_KEY_ID,
+    AWS_SECRET: AWS_SECRET_ACCESS_KEY,
+    REGION: AWS_REGION,
+    BUCKET: S3_BUCKET_NAME,
 }
 
 module.exports = objconf
