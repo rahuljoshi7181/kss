@@ -25,8 +25,14 @@ exports.up = function (db) {
         .then(() => {
             return db.insert(
                 'units',
-                ['unit_name', 'name_hindi', 'description'],
-                ['Nug', 'नग़', '1 fruit']
+                [
+                    'primary_unit',
+                    'secondary_unit',
+                    'primary_unit_hindi',
+                    'secondary_unit_hindi',
+                    'description',
+                ],
+                ['Tone', 'Nug', 'टन', 'नग़', '1 fruit']
             )
         })
         .then(() => {
