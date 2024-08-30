@@ -1,11 +1,27 @@
+const R = require('ramda')
 const executeQuery = async (query, params, db) => {
+    console.log(query, params)
     try {
         const [results] = await db.execute(query, params)
         return results
     } catch (err) {
-        console.error('Database Error:', err)
         throw new Error('Database operation failed')
     }
+}
+
+const buildWhereClause = (whereObj) => {
+    if (R.isEmpty(whereObj) || R.isNil(whereObj)) {
+        return ''
+    }
+    const whereConditions = Object.keys(whereObj)
+        .map((key) => {
+            if (whereObj[key].not) {
+                return `${key} != ?`
+            }
+            return `${key} = ?`
+        })
+        .join(' AND ')
+    return ` WHERE ${whereConditions}`
 }
 
 const insertRecord = async (table, data, connection) => {
@@ -26,9 +42,12 @@ const updateRecord = async (table, data, idColumn, id, connection) => {
     return executeQuery(query, values, connection)
 }
 
-const getRecordById = async (table, idColumn, id, connection) => {
-    const query = `SELECT * FROM ${table} WHERE ${idColumn} = ?`
-    return executeQuery(query, [id], connection)
+const getRecordById = async (table, whereObj, connection) => {
+    const whereClause = buildWhereClause(whereObj)
+    const query = `SELECT * FROM ${table}${whereClause}`
+    const whereValues = Object.values(whereObj || {})
+    console.log(query)
+    return executeQuery(query, whereValues, connection)
 }
 
 const getAllRecords = async (table, connection) => {
@@ -70,30 +89,36 @@ const getRecords = async (options) => {
         where = '',
     } = options
 
-    const columnsString = columns
-        .map((col) => {
-            // Check if the column requires concatenation
-            if (col.concat) {
-                // Use CONCAT_WS for concatenating first_name, middle_name, and last_name
-                return `CONCAT_WS(' ', ${col.concat.join(', ')}) AS ${col.alias}`
-            } else {
-                // Standard column selection with alias
-                return `${col.name} AS ${col.alias}`
-            }
-        })
-        .join(', ')
-    const joinString = joins
-        .map((join) => {
-            const { type = 'INNER', table: joinTable, on } = join
-            return `${type} JOIN ${joinTable} ON ${on}`
-        })
-        .join(' ')
+    const columnsString =
+        Array.isArray(columns) && columns.length > 0
+            ? columns
+                  .map((col) => {
+                      // Check if the column requires concatenation
+                      if (col.concat) {
+                          // Use CONCAT_WS for concatenating first_name, middle_name, and last_name
+                          return `CONCAT_WS(' ', ${col.concat.join(', ')}) AS ${col.alias}`
+                      } else {
+                          // Standard column selection with alias
+                          return `${col.name} AS ${col.alias}`
+                      }
+                  })
+                  .join(', ')
+            : ''
+
+    const joinString =
+        Array.isArray(joins) && joins.length > 0
+            ? joins
+                  .map((join) => {
+                      const { type = 'INNER', table: joinTable, on } = join
+                      return `${type} JOIN ${joinTable} ON ${on}`
+                  })
+                  .join(' ')
+            : ''
     const order = ` order by ${order_by_column} ${order_by}`
     const _offset = pagination ? ` OFFSET ${offset}` : ''
     const whereCondition = where ? ` WHERE ${where} ` : ''
     const query_limit = limit ? `LIMIT ${limit}` : ''
     const query = `SELECT ${columnsString} FROM ${table} ${joinString}${whereCondition} ${order} ${query_limit} ${_offset}`
-    console.log(query)
     return executeQuery(query, '', connection)
 }
 

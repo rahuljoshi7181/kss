@@ -1,7 +1,9 @@
+const Boom = require('@hapi/boom')
 const messages = require('../messages/messages')
-const logger = require('../logger')
-const { getRecords } = require('../models/db-common')
+const { getRecordById, getRecords } = require('../models/db-common')
 const { getDataFromTable } = require('../helper')
+const { isObjectNotEmptyOrUndefined, isNotEmpty } = require('../constants')
+
 const [table, form_field, form_sections] = [
     'forms',
     'form_fields',
@@ -65,7 +67,6 @@ const getForms = async (req, h) => {
             pagination: false,
             where: whereCondition,
         })
-        console.log(rows, ' **************** ')
         const transformedData = {
             form_id: rows[0].form_id,
             form_title: rows[0].form_title,
@@ -117,10 +118,67 @@ const getForms = async (req, h) => {
             )
             .code(200)
     } catch (error) {
-        logger.error(error)
-        throw messages.createBadRequestError(
-            error.message || 'An error occurred while fetching the form.'
-        )
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
+const getDynamicData = async (req, h) => {
+    let connection
+    try {
+        connection = await req.server.mysqlPool.getConnection()
+        const depe_id = req.query.depe_id || ''
+        const option_id = req.query.option_id || ''
+
+        const whereObj = {
+            id: depe_id,
+        }
+        const [rows] = await getRecordById(form_field, whereObj, connection)
+
+        if (!isObjectNotEmptyOrUndefined(rows)) {
+            throw Boom.conflict('Dependent field not found!')
+        } else {
+            const settingsObject = JSON.parse(rows.settings)
+            let columns = isNotEmpty(settingsObject.column)
+                ? settingsObject.column.split(',').map((data) => {
+                      return { name: data, alias: data }
+                  })
+                : []
+
+            const result = await getRecords({
+                table: rows?.dependent_table,
+                columns,
+                order_by: 'asc',
+                order_by_column: settingsObject.order_by,
+                limit: 0,
+                offset: 0,
+                connection,
+                joins: [],
+                pagination: false,
+                where: `${settingsObject.where}=` + option_id,
+            })
+            return h
+                .response(
+                    messages.successResponse(
+                        result,
+                        'Listing fetched successfully!'
+                    )
+                )
+                .code(200)
+        }
+    } catch (error) {
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
     } finally {
         if (connection) await connection.release()
     }
@@ -128,4 +186,5 @@ const getForms = async (req, h) => {
 
 module.exports = {
     getForms,
+    getDynamicData,
 }

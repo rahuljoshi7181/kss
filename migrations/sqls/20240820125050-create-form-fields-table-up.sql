@@ -12,6 +12,7 @@ CREATE TABLE form_fields (
     dependent_field VARCHAR(100),
     dependent_table VARCHAR(100),
     error_message VARCHAR(200),
+    settings TEXT,
     required BOOLEAN DEFAULT FALSE,
     disabled BOOLEAN DEFAULT FALSE,
     options TEXT,

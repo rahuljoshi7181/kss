@@ -2,11 +2,13 @@ CREATE TABLE leads (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL,
     fruit_id int(11) DEFAULT NULL,
-    business_type ENUM('Street Seller', 'Local Vendor', 'Other') NOT NULL,
+    business_type int(11) DEFAULT NULL,
     potential_volume DECIMAL(10, 2) DEFAULT NULL,
-    lead_status ENUM('New', 'Contacted', 'Interested', 'Not Interested', 'Converted') DEFAULT 'New',
+    lead_status int(11) DEFAULT 1,
     notes TEXT DEFAULT NULL,
     source VARCHAR(255) NULL,
+    created_by VARCHAR(100) NULL,
+    updated_by VARCHAR(100) NULL,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
