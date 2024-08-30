@@ -1,0 +1,9 @@
+CREATE TABLE login_hist (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    latitude varchar(150) DEFAULT NULL,
+    longitude varchar(150) DEFAULT NULL,
+    createdBy INT(10) DEFAULT '1',
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

@@ -5,6 +5,7 @@ const {
     update_fruits,
     save_fruit_category,
     update_fruits_categories,
+    getMandiRates,
 } = require('../handlers/fruits') // Ensure this path is correct
 
 module.exports = [
@@ -73,6 +74,14 @@ module.exports = [
                     row_id: Joi.number().integer().required(),
                 }),
             },
+        },
+    },
+    {
+        method: 'GET',
+        path: '/v1/get-mandi-rates',
+        config: {
+            handler: getMandiRates,
+            validate: {},
         },
     },
     // More routes...

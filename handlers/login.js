@@ -14,7 +14,10 @@ const moment = require('moment')
 const jwtGenerate = async (req, h) => {
     const { mobile, password } = req.payload
     const connection = await req.server.mysqlPool.getConnection()
-    const [rows] = await getRecordById('users', 'username', mobile, connection)
+    const whereObj = {
+        username: mobile,
+    }
+    const [rows] = await getRecordById('users', whereObj, connection)
 
     if (rows !== undefined && R.isEmpty(rows)) {
         throw messages.createNotFoundError('User not found')
@@ -27,6 +30,8 @@ const jwtGenerate = async (req, h) => {
             login_count: rows.login_count + 1,
         }
         await updateRecord('users', payload, 'id', rows.id, connection)
+        let hist_payload = { user_id: rows.id }
+        await insertRecord('login_hist', hist_payload, connection)
         connection.release()
         return h
             .response(
@@ -47,7 +52,10 @@ const user_register = async (req, h) => {
     let payload = { ...req.payload, username: mobile }
     delete payload.mobile
     const connection = await req.server.mysqlPool.getConnection()
-    const [rows] = await getRecordById('users', 'username', mobile, connection)
+    const whereObj = {
+        username: mobile,
+    }
+    const [rows] = await getRecordById('users', whereObj, connection)
 
     if (rows !== undefined && R.isEmpty(rows)) {
         logger.error('User already exists')
@@ -60,7 +68,7 @@ const user_register = async (req, h) => {
         payload = { ...payload, password: hashedPassword }
         await insertRecord('users', payload, connection)
         await connection.commit()
-        await connection.release()
+
         return h
             .response(
                 messages.successResponse(
@@ -73,6 +81,8 @@ const user_register = async (req, h) => {
         await connection.rollback()
         logger.error(error)
         throw messages.createBadRequestError(error)
+    } finally {
+        await connection.release()
     }
 }
 
