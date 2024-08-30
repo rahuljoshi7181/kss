@@ -52,14 +52,14 @@ const userListing = async (req, h) => {
 
         const joins = [
             {
-                type: 'INNER',
+                type: 'LEFT',
                 table: 'city',
                 on: `city.id = ${table_name}.city`,
             },
             {
-                type: 'INNER',
+                type: 'LEFT',
                 table: 'area',
-                on: `city.id = area.city_id`,
+                on: `area.id = users.area`,
             },
             { type: 'LEFT', table: 'state', on: 'state.id = city.state_id' },
         ]

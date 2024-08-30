@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 `created_by` int(10) NOT NULL,
 `updated_by` int(10),
 `total_purchase` bigint,
+`area` int(11) DEFAULT null,
 `total_sales`bigint,
   `createdAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
