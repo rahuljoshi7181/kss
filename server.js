@@ -12,6 +12,9 @@ const rateLimitor = require('hapi-rate-limitor')
 const jwt = require('jsonwebtoken')
 const R = require('ramda')
 const cors = require('./cors')
+const { decrypt } = require('./helper')
+const { getStartAndEnd } = require('./constants')
+const { getData, buildRedisConnection } = require('./redis/redis-client')
 
 module.exports = async (config, { enableRatelimit = true } = {}) => {
     const { host, port } = config
@@ -83,27 +86,39 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
             return h.continue
         })
 
-        server.ext('onRequest', (request, h) => {
+        server.ext('onRequest', async (request, h) => {
             const authorization = request.headers.authorization
-            const bypassRoutes = ['register', 'generate-token']
-            const currentReqPath = R.last(R.split('/')(request.path))
+            const bypassRoutes = new Set(['register', 'generate-token'])
+            const currentReqPath = R.last(R.split('/', request.path))
 
-            if (bypassRoutes.includes(currentReqPath)) {
+            // Bypass authorization check for specific routes
+            if (bypassRoutes.has(currentReqPath)) {
                 return h.continue
             }
 
-            if (authorization) {
-                const token = authorization.replace('Bearer ', '')
-                try {
-                    const decoded = jwt.verify(token, config.secret)
-                    request.auth = { credentials: decoded }
-                    return h.continue
-                } catch (err) {
-                    throw errorMessages.createUnauthorizedError('Token expired')
-                }
-            } else {
+            if (!authorization) {
                 throw errorMessages.createUnauthorizedError(
                     'Failed to authorize the request.'
+                )
+            }
+
+            const token = authorization.replace('Bearer ', '')
+            const redisClient = await buildRedisConnection()
+            const key = getStartAndEnd(token)
+
+            try {
+                const encryptedToken = await getData(
+                    redisClient,
+                    `ENCRYPT_${key}`
+                )
+                const decryptedToken = decrypt(token, encryptedToken)
+                const decoded = jwt.verify(decryptedToken, config.secret)
+                await redisClient.quit()
+                request.auth = { credentials: decoded }
+                return h.continue
+            } catch (err) {
+                throw errorMessages.createUnauthorizedError(
+                    'Token expired or invalid'
                 )
             }
         })

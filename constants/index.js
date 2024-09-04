@@ -45,6 +45,14 @@ const isNotEmpty = R.compose(R.not, R.either(R.isEmpty, R.isNil))
 
 const createRemoveFunction = (substring1) => R.replace(substring1, '')
 
+const getStartAndEnd = R.compose(
+    R.join(''),
+    R.juxt([
+        R.take(10), // Get the first 5 characters
+        R.takeLast(5), // Get the last 5 characters
+    ])
+)
+
 module.exports = {
     HEADER_ICM_CO,
     UserTypes,
@@ -57,4 +65,5 @@ module.exports = {
     removeBlankSpaces,
     createRemoveFunction,
     globalVariables,
+    getStartAndEnd,
 }
