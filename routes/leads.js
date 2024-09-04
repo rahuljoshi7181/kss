@@ -3,6 +3,7 @@ const {
     saveLeads,
     updateLeads,
     saveFollowups,
+    getFollowupLeads,
 } = require('../handlers/leads') // Ensure this path is correct
 const Joi = require('joi')
 module.exports = [
@@ -12,6 +13,18 @@ module.exports = [
         config: {
             handler: getLeads,
             validate: {},
+        },
+    },
+    {
+        method: 'GET',
+        path: '/v1/leads/get-followup',
+        config: {
+            handler: getFollowupLeads,
+            validate: {
+                query: Joi.object({
+                    lead_id: Joi.number().integer().min(1).required(),
+                }),
+            },
         },
     },
     {
@@ -46,7 +59,7 @@ module.exports = [
     },
     {
         method: 'POST',
-        path: '/v1/lead-followup',
+        path: '/v1/leads/save-followup',
         config: {
             handler: saveFollowups,
             validate: {
