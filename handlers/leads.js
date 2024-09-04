@@ -12,11 +12,12 @@ const {
     insertRecord,
     updateRecord,
 } = require('../models/db-common')
-const [table_name, userTable, fruitTable, fruitCat] = [
+const [table_name, userTable, fruitTable, fruitCat, follow_ups] = [
     'leads',
     'users',
     'fruits',
     'fruit_categories',
+    'follow_ups',
 ]
 
 const saveLeads = async (req, h) => {
@@ -206,8 +207,41 @@ const getLeads = async (req, h) => {
     }
 }
 
+const saveFollowups = async (req, h) => {
+    let connection
+    try {
+        connection = await req.server.mysqlPool.getConnection()
+        const { id } = req.auth.credentials
+        let payload = { ...req.payload, created_by: id }
+        await connection.beginTransaction()
+        await insertRecord(follow_ups, payload, connection)
+        await connection.commit()
+
+        return h
+            .response(
+                messages.successResponse(
+                    {},
+                    `follow up created successfully !`,
+                    201
+                )
+            )
+            .code(201)
+    } catch (error) {
+        await connection.rollback()
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
 module.exports = {
     getLeads,
     saveLeads,
     updateLeads,
+    saveFollowups,
 }

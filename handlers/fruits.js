@@ -1,6 +1,7 @@
 const R = require('ramda')
 const messages = require('../messages/messages')
 const Boom = require('@hapi/boom')
+const { isObjectNotEmptyOrUndefined } = require('../constants')
 const {
     insertRecord,
     getRecordById,
@@ -15,6 +16,7 @@ const [
     city_table,
     fruit_categories,
     units,
+    users,
 ] = [
     'fruits',
     'fruit_categories',
@@ -22,6 +24,7 @@ const [
     'city',
     'fruit_categories',
     'units',
+    'users',
 ]
 
 const getFruits = async (req, h) => {
@@ -192,30 +195,47 @@ const getMandiRates = async (req, h) => {
             { name: `${city_table}.name`, alias: 'city_name' },
             { name: `${city_table}.name_hindi`, alias: 'city_name_hindi' },
             { name: `${mandi_rates}.rate`, alias: 'rate' },
-            { name: `${units}.unit`, alias: 'unit' },
-            { name: `${city_table}.rate`, alias: 'rate' },
-            { name: `${city_table}.rate`, alias: 'rate' },
+            { name: `${units}.primary_unit`, alias: 'pri_unit' },
+            { name: `${units}.secondary_unit`, alias: 'sec_unit' },
+            { name: `${mandi_rates}.rate_date`, alias: 'rate_date' },
+            { name: `vendor.name`, alias: 'vendor_name' },
+            { name: `${users}.name`, alias: 'user_name' },
         ]
         const joins = [
             {
                 type: 'INNER',
-                table: city_table,
-                on: city_table + `.id = ${table_name}.city_id`,
+                table: fruit_categories,
+                on: `${mandi_rates}.fruit_id = ${fruit_categories}.id`,
             },
             {
                 type: 'INNER',
-                table: fruit_categories,
-                on: fruit_categories + `.id = ${table_name}.fruit_id`,
+                table: city_table,
+                on: city_table + `.id = ${mandi_rates}.city_id`,
             },
             {
                 type: 'INNER',
                 table: table_name,
                 on: `${table_name}.id = ${fruit_categories}.fruit_id`,
             },
+            {
+                type: 'LEFT',
+                table: units,
+                on: `${units}.id = ${fruit_categories}.units`,
+            },
+            {
+                type: 'LEFT',
+                table: users,
+                on: `${users}.id = ${mandi_rates}.created_by`,
+            },
+            {
+                type: 'LEFT',
+                table: 'users as vendor',
+                on: `vendor.id = ${mandi_rates}.user_id`,
+            },
         ]
         /* eslint-disable */
         const rows = await getRecords({
-            mandi_rates,
+            table: mandi_rates,
             columns,
             order_by: 'desc',
             order_by_column: `${mandi_rates}.id`,
@@ -226,6 +246,14 @@ const getMandiRates = async (req, h) => {
             pagination: false,
             where: '',
         })
+        return h
+            .response(
+                messages.successResponse(
+                    rows,
+                    `Daily rates fatched successfully !`
+                )
+            )
+            .code(200)
     } catch (error) {
         await connection.rollback()
         if (Boom.isBoom(error)) {
@@ -239,6 +267,69 @@ const getMandiRates = async (req, h) => {
     }
 }
 
+const save_mandi_rates = async (req, h) => {
+    const { id } = req.auth.credentials
+    let payload = { ...req.payload, created_by: id }
+    const connection = await req.server.mysqlPool.getConnection()
+    try {
+        await connection.beginTransaction()
+        await insertRecord(mandi_rates, payload, connection)
+        await connection.commit()
+        return h
+            .response(
+                messages.successResponse(
+                    {},
+                    `Mandi rate is inserted successfully !`
+                )
+            )
+            .code(201)
+    } catch (error) {
+        await connection.rollback()
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
+const update_mandi_rates = async (req, h) => {
+    const { id } = req.auth.credentials
+    let payload = { ...req.payload, updated_by: id }
+    let connection
+    try {
+        connection = await req.server.mysqlPool.getConnection()
+        const whereObj = {
+            id: payload.id,
+        }
+        const [rows] = await getRecordById(mandi_rates, whereObj, connection)
+        if (!isObjectNotEmptyOrUndefined(rows)) {
+            throw Boom.conflict('Records not found!')
+        } else {
+            delete payload.id
+            await connection.beginTransaction()
+            await updateRecord(mandi_rates, payload, 'id', rows.id, connection)
+            await connection.commit()
+            return h
+                .response(
+                    messages.successResponse(
+                        {},
+                        `Rate is updated successfully !`
+                    )
+                )
+                .code(201)
+        }
+    } catch (error) {
+        await connection.rollback()
+        throw messages.createBadRequestError(error)
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
 module.exports = {
     getFruits,
     save_fruits,
@@ -246,4 +337,6 @@ module.exports = {
     save_fruit_category,
     update_fruits_categories,
     getMandiRates,
+    save_mandi_rates,
+    update_mandi_rates,
 }
