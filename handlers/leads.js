@@ -239,9 +239,77 @@ const saveFollowups = async (req, h) => {
     }
 }
 
+const getFollowupLeads = async (req, h) => {
+    let connection
+    try {
+        connection = await req.server.mysqlPool.getConnection()
+        const columns = [
+            { name: follow_ups + '.follow_up_date', alias: 'follow_up_date' },
+            { name: follow_ups + '.follow_up_type', alias: 'follow_up_type' },
+            { name: `${follow_ups}.follow_up_notes`, alias: 'follow_up_notes' },
+            {
+                name: `${follow_ups}.next_follow_up_date`,
+                alias: 'next_follow_up_date',
+            },
+            { name: `${userTable}.name`, alias: 'created_by' },
+        ]
+
+        const joins = [
+            {
+                type: 'LEFT',
+                table: userTable,
+                on: `${userTable}.id = ${follow_ups}.created_by`,
+            },
+        ]
+
+        const rows = await getRecords({
+            table: follow_ups,
+            columns,
+            order_by: 'desc',
+            order_by_column: follow_ups + '.id',
+            limit: 0,
+            offset: 0,
+            connection,
+            joins,
+            pagination: false,
+        })
+
+        rows.forEach((data) => {
+            data.business_type = isNotNilOrEmpty(data?.business_type)
+                ? VendorType[data.business_type]
+                : ''
+            data.lead_status = isNotNilOrEmpty(data?.lead_status)
+                ? LeadStatus[data.lead_status]
+                : ''
+        })
+
+        return h
+            .response(
+                messages.successResponse(
+                    {
+                        listing: rows,
+                    },
+                    'followup fetched successfully!'
+                )
+            )
+            .code(200)
+    } catch (error) {
+        await connection.rollback()
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
 module.exports = {
     getLeads,
     saveLeads,
     updateLeads,
     saveFollowups,
+    getFollowupLeads,
 }

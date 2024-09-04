@@ -1,3 +1,5 @@
+const crypto = require('crypto')
+const config = require('../config')
 const { getRecords } = require('../models/db-common')
 const R = require('ramda')
 const { isNotEmpty, removeBlankSpaces } = require('../constants')
@@ -72,7 +74,6 @@ const pagination = (totalItems, currentPage = 1, itemsPerPage = 10) => {
 }
 
 const getDataFromTable = async (table, connection, setting) => {
-    console.log(' *********************************************** ')
     let joins = ''
     let columns = [
         { name: `${table}.id`, alias: 'id' },
@@ -98,7 +99,7 @@ const getDataFromTable = async (table, connection, setting) => {
                     R.replace(')', '')
                 )
                 let concatPart = removeConcat(col).split('as')
-                console.log(concatPart, 'concatPart')
+
                 return {
                     concat: removeBlankSpaces(concatPart[0].split(' ')),
                     alias: concatPart[1],
@@ -111,7 +112,6 @@ const getDataFromTable = async (table, connection, setting) => {
             }
         })
     }
-    console.log(columns, ' columns ')
 
     const rows = await getRecords({
         table,
@@ -129,7 +129,41 @@ const getDataFromTable = async (table, connection, setting) => {
     return rows
 }
 
+function generateRandomKey(size = 32) {
+    return crypto.randomBytes(size).toString('hex')
+}
+
+// Encrypt function
+function encrypt(text, encryptionKey) {
+    const iv = crypto.randomBytes(16)
+    const cipher = crypto.createCipheriv(
+        config.ALGO_SECRET,
+        Buffer.from(encryptionKey),
+        iv
+    )
+    let encrypted = cipher.update(text)
+    encrypted = Buffer.concat([encrypted, cipher.final()])
+    return iv.toString('hex') + ':' + encrypted.toString('hex')
+}
+
+function decrypt(text, encryptionKey) {
+    const textParts = text.split(':')
+    const iv = Buffer.from(textParts.shift(), 'hex')
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex')
+    const decipher = crypto.createDecipheriv(
+        config.ALGO_SECRET,
+        Buffer.from(encryptionKey),
+        iv
+    )
+    let decrypted = decipher.update(encryptedText)
+    decrypted = Buffer.concat([decrypted, decipher.final()])
+    return decrypted.toString()
+}
+
 module.exports = {
     pagination,
     getDataFromTable,
+    generateRandomKey,
+    encrypt,
+    decrypt,
 }

@@ -16,6 +16,7 @@ const {
     AWS_SECRET_ACCESS_KEY,
     AWS_REGION,
     S3_BUCKET_NAME,
+    ALGO_SECRET,
 } = process.env
 
 const objconf = {
@@ -34,6 +35,7 @@ const objconf = {
     AWS_SECRET: AWS_SECRET_ACCESS_KEY,
     REGION: AWS_REGION,
     BUCKET: S3_BUCKET_NAME,
+    ALGO_SECRET: ALGO_SECRET,
 }
 
 module.exports = objconf
