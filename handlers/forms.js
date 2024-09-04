@@ -2,7 +2,12 @@ const Boom = require('@hapi/boom')
 const messages = require('../messages/messages')
 const { getRecordById, getRecords } = require('../models/db-common')
 const { getDataFromTable } = require('../helper')
-const { isObjectNotEmptyOrUndefined, isNotEmpty } = require('../constants')
+const {
+    isObjectNotEmptyOrUndefined,
+    isNotEmpty,
+    createRemoveFunction,
+    globalVariables,
+} = require('../constants')
 
 const [table, form_field, form_sections] = [
     'forms',
@@ -51,9 +56,9 @@ const getForms = async (req, h) => {
                 alias: 'options_source_table',
             },
             { name: `${form_field}.options_query`, alias: 'options_query' },
+            { name: `${form_field}.settings`, alias: 'settings' },
         ]
 
-        // Define the where condition
         const whereCondition = `${table}.form_title='${formName}'`
         const rows = await getRecords({
             table,
@@ -88,10 +93,17 @@ const getForms = async (req, h) => {
             }
 
             if (field.type === 'select' && field.options_source_table != null) {
-                optionsVal = await getDataFromTable(
-                    field.options_source_table,
-                    connection
-                )
+                if (field.options_source_table.includes('INTERNAL')) {
+                    let removeConcat = createRemoveFunction('INTERNAL_')
+                    let getOptions = removeConcat(field.options_source_table)
+                    optionsVal = globalVariables[getOptions]
+                } else {
+                    optionsVal = await getDataFromTable(
+                        field.options_source_table,
+                        connection,
+                        field.settings
+                    )
+                }
             }
 
             sectionsMap[field.section_id].fields.push({
@@ -103,6 +115,7 @@ const getForms = async (req, h) => {
                 placeholder: field.field_placeholder,
                 error_message: field.error_message,
                 dependent_field: field.dependent_field,
+                field_value: field.field_value,
                 required: field.required === 1,
                 disabled: false, // Assuming no disabled field in provided data
                 options: optionsVal === '' ? field.options : optionsVal,

@@ -1,4 +1,6 @@
 const { getRecords } = require('../models/db-common')
+const R = require('ramda')
+const { isNotEmpty, removeBlankSpaces } = require('../constants')
 const pagination = (totalItems, currentPage = 1, itemsPerPage = 10) => {
     const totalPages = Math.ceil(totalItems / itemsPerPage)
     currentPage = Math.max(1, Math.min(currentPage, totalPages))
@@ -69,21 +71,57 @@ const pagination = (totalItems, currentPage = 1, itemsPerPage = 10) => {
     }
 }
 
-const getDataFromTable = async (table, connection) => {
+const getDataFromTable = async (table, connection, setting) => {
+    console.log(' *********************************************** ')
+    let joins = ''
     let columns = [
         { name: `${table}.id`, alias: 'id' },
         { name: `${table}.name`, alias: 'name' },
     ]
+    const settingsObject = isNotEmpty(setting) ? JSON.parse(setting) : ''
+    if (settingsObject != '' && isNotEmpty(settingsObject.join)) {
+        let joinParts = settingsObject.join.split(' ')
+        joins = [
+            {
+                type: joinParts[0],
+                table: joinParts[2].split('=')[0].split('.')[0],
+                on: joinParts[2],
+            },
+        ]
+    }
+    if (settingsObject != '' && isNotEmpty(settingsObject.column)) {
+        let columnsArray = settingsObject.column.split(',')
+        columns = columnsArray.map((col) => {
+            if (col.includes('CONCAT')) {
+                const removeConcat = R.compose(
+                    R.replace('CONCAT(', ''),
+                    R.replace(')', '')
+                )
+                let concatPart = removeConcat(col).split('as')
+                console.log(concatPart, 'concatPart')
+                return {
+                    concat: removeBlankSpaces(concatPart[0].split(' ')),
+                    alias: concatPart[1],
+                }
+            } else {
+                return {
+                    name: col,
+                    alias: col.includes('.') ? col.split('.')[1] : col,
+                }
+            }
+        })
+    }
+    console.log(columns, ' columns ')
 
     const rows = await getRecords({
         table,
         columns,
-        order_by: 'desc',
-        order_by_column: 'name',
+        order_by: 'asc',
+        order_by_column: settingsObject.order_by,
         limit: 0,
         offset: 0,
         connection,
-        joins: [],
+        joins: joins,
         pagination: false,
         where: '',
     })

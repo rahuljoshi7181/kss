@@ -1,4 +1,9 @@
-const { getLeads, saveLeads, updateLeads } = require('../handlers/leads') // Ensure this path is correct
+const {
+    getLeads,
+    saveLeads,
+    updateLeads,
+    saveFollowups,
+} = require('../handlers/leads') // Ensure this path is correct
 const Joi = require('joi')
 module.exports = [
     {
@@ -35,6 +40,29 @@ module.exports = [
                         .required(),
                     notes: Joi.string().trim().required().max(300),
                     source: Joi.string().trim().required().max(100),
+                }),
+            },
+        },
+    },
+    {
+        method: 'POST',
+        path: '/v1/lead-followup',
+        config: {
+            handler: saveFollowups,
+            validate: {
+                payload: Joi.object({
+                    lead_id: Joi.string()
+                        .trim()
+                        .pattern(/^[0-9]$/)
+                        .required(),
+                    follow_up_date: Joi.string()
+                        .pattern(/^\d{4}-\d{2}-\d{2}$/)
+                        .required(),
+                    follow_up_type: Joi.string().trim().required(),
+                    follow_up_notes: Joi.string().trim().required(),
+                    next_follow_up_date: Joi.string()
+                        .pattern(/^\d{4}-\d{2}-\d{2}$/)
+                        .required(),
                 }),
             },
         },

@@ -17,10 +17,17 @@ exports.setup = function (options, seedLink) {
 exports.up = function (db) {
     return db
         .addColumn('fruit_categories', 'units', {
-            type: 'int', // or 'int', 'date', 'boolean', etc.
-            length: 11, // optional, specify for VARCHAR or CHAR types
-            notNull: false, // optional, specify if the column should be NOT NULL
-            defaultValue: '', // optional, specify a default value
+            type: 'int',
+            length: 11,
+            notNull: false,
+        })
+        .then(() => {
+            return db.addColumn('city', 'name_hindi', {
+                type: 'varchar', // or 'int', 'date', 'boolean', etc.
+                length: 200, // optional, specify for VARCHAR or CHAR types
+                notNull: false, // optional, specify if the column should be NOT NULL
+                defaultValue: null, // optional, specify a default value
+            })
         })
         .then(() => {
             return db.insert(

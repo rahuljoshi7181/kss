@@ -43,6 +43,7 @@ const userListing = async (req, h) => {
         const columns = [
             { name: table_name + '.id', alias: 'user_id' },
             { name: table_name + '.name', alias: 'name' },
+            { name: table_name + '.username', alias: 'mobile' },
             { name: 'area.colony_name', alias: 'area_name' },
             { name: 'city.name', alias: 'city' },
             { name: 'state.name', alias: 'state' },

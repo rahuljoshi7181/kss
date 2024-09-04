@@ -1,5 +1,6 @@
 const R = require('ramda')
 const HEADER_ICM_CO = 'KSS-ID'
+
 const UserTypes = {
     1: 'Vendor',
     2: 'Seller',
@@ -21,6 +22,13 @@ const LeadStatus = {
     5: 'Converted',
 }
 
+const globalVariables = {
+    LeadStatus: LeadStatus,
+    VendorType: VendorType,
+    UserTypes: UserTypes,
+}
+const removeWhiteSpace = R.replace(/\s+/g, '')
+
 const isObjectNotEmptyOrUndefined = R.allPass([
     R.complement(R.isNil), // Check if not null or undefined
     R.complement(R.isEmpty), // Check if not empty
@@ -32,7 +40,10 @@ const isNotNilOrEmpty = R.allPass([
     R.compose(R.complement(R.isEmpty)), // Check if not empty after trimming
 ])
 
-const isNotEmpty = R.compose(R.not, R.isEmpty)
+const removeBlankSpaces = R.reject(R.equals(''))
+const isNotEmpty = R.compose(R.not, R.either(R.isEmpty, R.isNil))
+
+const createRemoveFunction = (substring1) => R.replace(substring1, '')
 
 module.exports = {
     HEADER_ICM_CO,
@@ -42,4 +53,8 @@ module.exports = {
     isNotNilOrEmpty,
     LeadStatus,
     isNotEmpty,
+    removeWhiteSpace,
+    removeBlankSpaces,
+    createRemoveFunction,
+    globalVariables,
 }
