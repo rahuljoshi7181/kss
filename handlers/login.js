@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken')
 const logger = require('../logger')
 const R = require('ramda')
 const messages = require('../messages/messages')
+const { generateRandomKey, encrypt } = require('../helper')
+const { getStartAndEnd } = require('../constants')
+const { setData, buildRedisConnection } = require('../redis/redis-client')
 const {
     insertRecord,
     getRecordById,
@@ -14,36 +17,56 @@ const moment = require('moment')
 const jwtGenerate = async (req, h) => {
     const { mobile, password } = req.payload
     const connection = await req.server.mysqlPool.getConnection()
-    const whereObj = {
-        username: mobile,
-    }
-    const [rows] = await getRecordById('users', whereObj, connection)
 
-    if (rows !== undefined && R.isEmpty(rows)) {
-        throw messages.createNotFoundError('User not found')
-    } else if (await bcrypt.compare(password, rows.password)) {
-        const token = jwt.sign({ id: rows.id }, config.secret, {
+    try {
+        const [rows] = await getRecordById(
+            'users',
+            { username: mobile },
+            connection
+        )
+
+        if (R.isEmpty(rows)) {
+            throw messages.createNotFoundError('User not found')
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, rows.password)
+        if (!isPasswordValid) {
+            throw messages.createNotFoundError('Invalid credentials')
+        }
+
+        const randomKey = generateRandomKey(16)
+        const redisClient = await buildRedisConnection()
+
+        let token = jwt.sign({ id: rows.id }, config.secret, {
             expiresIn: '1h',
         })
-        let payload = {
+        token = encrypt(token, randomKey)
+
+        const key = getStartAndEnd(token)
+        await setData(redisClient, `ENCRYPT_${key}`, randomKey, 3600)
+
+        const payload = {
             last_login: moment().format('YYYY-MM-DD HH:mm:ss'),
             login_count: rows.login_count + 1,
         }
         await updateRecord('users', payload, 'id', rows.id, connection)
-        let hist_payload = { user_id: rows.id }
-        await insertRecord('login_hist', hist_payload, connection)
-        connection.release()
+        await redisClient.quit()
+        const histPayload = { user_id: rows.id }
+        await insertRecord('login_hist', histPayload, connection)
+
         return h
             .response(
                 messages.successResponse(
-                    { token: token },
-                    `${mobile} is authenticated successfully !`
+                    { token },
+                    `${mobile} is authenticated successfully!`
                 )
             )
             .code(201)
-    } else {
-        connection.release()
-        throw messages.createNotFoundError('Invalid credentials')
+    } catch (error) {
+        logger.error(error.message)
+        throw messages.createUnauthorizedError(error.message)
+    } finally {
+        connection.release() // Ensure the connection is always released
     }
 }
 
@@ -79,8 +102,8 @@ const user_register = async (req, h) => {
             .code(201)
     } catch (error) {
         await connection.rollback()
-        logger.error(error)
-        throw messages.createBadRequestError(error)
+        logger.error(error.message)
+        throw messages.createBadRequestError(error.message)
     } finally {
         await connection.release()
     }
