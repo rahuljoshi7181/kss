@@ -70,8 +70,8 @@ const updateLeads = async (req, h) => {
         const whereObj = {
             id: payload.id,
         }
-        const [rows] = await getRecordById(table_name, whereObj, connection)
-        if (!isObjectNotEmptyOrUndefined(rows)) {
+        const rows = await getRecordById(table_name, whereObj, connection)
+        if (rows.length === 0) {
             throw Boom.conflict('Lead not found!')
         } else {
             const whObj = {
@@ -79,8 +79,8 @@ const updateLeads = async (req, h) => {
                 fruit_id: payload.fruit_id,
                 id: { value: payload.id, not: true },
             }
-            const [rows] = await getRecordById(table_name, whObj, connection)
-            if (!isObjectNotEmptyOrUndefined(rows)) {
+            const row = await getRecordById(table_name, whObj, connection)
+            if (row.length !== 0) {
                 throw Boom.conflict('Lead already exists!')
             } else {
                 await connection.beginTransaction()
@@ -123,6 +123,7 @@ const getLeads = async (req, h) => {
 
         const columns = [
             { name: userTable + '.name', alias: 'name' },
+            { name: table_name + '.id', alias: 'id' },
             { name: userTable + '.username', alias: 'mobile' },
             {
                 concat: [`${fruitTable}.name`, `${fruitCat}.name`],

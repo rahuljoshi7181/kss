@@ -273,14 +273,20 @@ const updateUser = async (req, h) => {
         const whereObj = {
             id: req.payload.id,
         }
-        const [rows] = await getRecordById(table_name, whereObj, connection)
+        const rows = await getRecordById(table_name, whereObj, connection)
 
-        if (!isObjectNotEmptyOrUndefined(rows)) {
+        if (rows.length === 0) {
             throw Boom.conflict('User not found!')
         } else {
             await connection.beginTransaction()
             delete payload.id
-            await updateRecord(table_name, payload, 'id', rows.id, connection)
+            await updateRecord(
+                table_name,
+                payload,
+                'id',
+                rows[0].id,
+                connection
+            )
             await connection.commit()
             return h
                 .response(
