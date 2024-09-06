@@ -22,16 +22,29 @@ const LeadStatus = {
     5: 'Converted',
 }
 
+const FollowupType = {
+    Call: 'Call',
+    Email: 'Email',
+    Visit: 'Visit',
+    Message: 'Message',
+    Other: 'Other',
+}
+
 const globalVariables = {
     LeadStatus: LeadStatus,
     VendorType: VendorType,
     UserTypes: UserTypes,
+    FollowupType: FollowupType,
 }
 const removeWhiteSpace = R.replace(/\s+/g, '')
 
 const isObjectNotEmptyOrUndefined = R.allPass([
-    R.complement(R.isNil), // Check if not null or undefined
-    R.complement(R.isEmpty), // Check if not empty
+    R.complement(R.isNil),
+    R.ifElse(
+        R.anyPass([R.is(Object), R.is(Array)]),
+        R.complement(R.isEmpty),
+        R.T
+    ),
 ])
 
 const isNotNilOrEmpty = R.allPass([

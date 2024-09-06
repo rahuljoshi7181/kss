@@ -1,7 +1,7 @@
 const R = require('ramda')
 const messages = require('../messages/messages')
 const Boom = require('@hapi/boom')
-const { isObjectNotEmptyOrUndefined } = require('../constants')
+// const { isObjectNotEmptyOrUndefined } = require('../constants')
 const {
     insertRecord,
     getRecordById,
@@ -305,13 +305,19 @@ const update_mandi_rates = async (req, h) => {
         const whereObj = {
             id: payload.id,
         }
-        const [rows] = await getRecordById(mandi_rates, whereObj, connection)
-        if (!isObjectNotEmptyOrUndefined(rows)) {
+        const rows = await getRecordById(mandi_rates, whereObj, connection)
+        if (rows.length === 0) {
             throw Boom.conflict('Records not found!')
         } else {
             delete payload.id
             await connection.beginTransaction()
-            await updateRecord(mandi_rates, payload, 'id', rows.id, connection)
+            await updateRecord(
+                mandi_rates,
+                payload,
+                'id',
+                rows[0].id,
+                connection
+            )
             await connection.commit()
             return h
                 .response(

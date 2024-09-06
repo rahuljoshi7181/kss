@@ -1,5 +1,5 @@
 const Boom = require('@hapi/boom')
-const allowedOrigins = ['localhost:8803/', 'localhost:3000']
+const allowedOrigins = ['localhost:8803/', 'localhost:3000', 'localhost:8803']
 // Example helper function to check if origin is allowed
 function isNotAllowedOrigin(origin) {
     console.log('origin', origin)

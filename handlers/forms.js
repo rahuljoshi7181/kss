@@ -97,6 +97,10 @@ const getForms = async (req, h) => {
                     let removeConcat = createRemoveFunction('INTERNAL_')
                     let getOptions = removeConcat(field.options_source_table)
                     optionsVal = globalVariables[getOptions]
+                    optionsVal = Object.keys(optionsVal).map((key) => ({
+                        id: key,
+                        name: optionsVal[key],
+                    }))
                 } else {
                     optionsVal = await getDataFromTable(
                         field.options_source_table,
@@ -160,7 +164,11 @@ const getDynamicData = async (req, h) => {
             const settingsObject = JSON.parse(rows.settings)
             let columns = isNotEmpty(settingsObject.column)
                 ? settingsObject.column.split(',').map((data) => {
-                      return { name: data, alias: data }
+                      let result = data.includes('as')
+                          ? data.split('as')
+                          : [data]
+                      console.log(result)
+                      return { name: result[0], alias: result[1] || result[0] }
                   })
                 : []
 
