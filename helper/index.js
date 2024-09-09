@@ -104,6 +104,11 @@ const getDataFromTable = async (table, connection, setting) => {
                     concat: removeBlankSpaces(concatPart[0].split(' ')),
                     alias: concatPart[1],
                 }
+            } else if (col.includes('as')) {
+                return {
+                    name: col.split('as')[0],
+                    alias: col.split('as')[1],
+                }
             } else {
                 return {
                     name: col,

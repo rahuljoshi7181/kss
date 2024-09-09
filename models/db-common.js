@@ -129,4 +129,5 @@ module.exports = {
     getAllRecords,
     getRecords,
     getRecordsCount,
+    executeQuery,
 }

@@ -97,7 +97,8 @@ module.exports = [
                     user_id: Joi.number().integer().required(),
                     fruit_id: Joi.number().integer().required(),
                     city_id: Joi.number().integer().required(),
-                    rate: Joi.number().integer().required(),
+                    primary_rate: Joi.number().integer().required(),
+                    secondary_rate: Joi.number().integer().required(),
                     rate_date: Joi.string()
                         .pattern(/^\d{4}-\d{2}-\d{2}$/)
                         .required(),
@@ -117,7 +118,8 @@ module.exports = [
                     user_id: Joi.number().integer().optional(),
                     fruit_id: Joi.number().integer().optional(),
                     city_id: Joi.number().integer().optional(),
-                    rate: Joi.number().integer().optional(),
+                    primary_rate: Joi.number().integer().optional(),
+                    secondary_rate: Joi.number().integer().optional(),
                     rate_date: Joi.string()
                         .pattern(/^\d{4}-\d{2}-\d{2}$/)
                         .optional(),

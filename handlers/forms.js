@@ -39,8 +39,10 @@ const getForms = async (req, h) => {
         let columns = [
             { name: `${table}.id`, alias: 'form_id' },
             { name: `${table}.form_title`, alias: 'form_title' },
+            { name: `${table}.tabing`, alias: 'tabing' },
             { name: `${form_sections}.id`, alias: 'section_id' },
             { name: `${form_sections}.section_title`, alias: 'section_title' },
+            { name: `${form_sections}.recursion`, alias: 'recursion' },
             { name: `${form_field}.id`, alias: 'field_id' },
             { name: `${form_field}.label`, alias: 'field_label' },
             { name: `${form_field}.field_name`, alias: 'field' },
@@ -75,6 +77,7 @@ const getForms = async (req, h) => {
         const transformedData = {
             form_id: rows[0].form_id,
             form_title: rows[0].form_title,
+            tabing: rows[0].tabing,
             sections: [],
         }
 

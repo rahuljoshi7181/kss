@@ -4,6 +4,7 @@ const users = require('./users.js')
 const fruits = require('./fruits.js')
 const forms = require('./forms.js')
 const leads = require('./leads.js')
+const purchase = require('./purchase.js')
 
 const health = [
     {
@@ -41,6 +42,7 @@ module.exports = {
             server.route(routeWithCorrelationId(fruits)),
             server.route(routeWithCorrelationId(health)),
             server.route(routeWithCorrelationId(leads)),
-            server.route(routeWithCorrelationId(forms))
+            server.route(routeWithCorrelationId(forms)),
+            server.route(routeWithCorrelationId(purchase))
     },
 }
