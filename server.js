@@ -31,7 +31,7 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
             validate: {
                 failAction: async (req, h, err) => {
                     req.logger.info({ err })
-                    return errorMessages.createBadRequestError()
+                    return errorMessages.createBadRequestError(err.message)
                 },
             },
         },

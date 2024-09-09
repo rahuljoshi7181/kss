@@ -1,0 +1,11 @@
+CREATE TABLE purchase_expense (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    purchase_id INT NOT NULL,  
+    expense_id INT NOT NULL, 
+    amount DECIMAL(10, 2) NOT NULL,  
+    description TEXT DEFAULT NULL, 
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL, 
+    updated_by INT DEFAULT NULL
+);
