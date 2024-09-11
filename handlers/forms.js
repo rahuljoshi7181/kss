@@ -111,6 +111,17 @@ const getForms = async (req, h) => {
                         field.settings
                     )
                 }
+            } else if (
+                field.type === 'select' &&
+                isObjectNotEmptyOrUndefined(field.options)
+            ) {
+                optionsVal = JSON.parse(field.options)
+                optionsVal.map((data) => {
+                    return {
+                        id: data.id,
+                        name: data.name,
+                    }
+                })
             }
 
             sectionsMap[field.section_id].fields.push({

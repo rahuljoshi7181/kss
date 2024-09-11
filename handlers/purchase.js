@@ -32,7 +32,6 @@ const save_purchase = async (req, h) => {
                     description: expense.description,
                     created_by: id,
                 }
-                console.log(expensePayload, 'expensePayload')
                 await insertRecord(purchase_expense, expensePayload, connection)
                 totalExpenses += expense.amount
             }
@@ -48,6 +47,19 @@ const save_purchase = async (req, h) => {
             purchaseId,
             connection
         )
+
+        // Insert into inventory table
+        const inventoryPayload = {
+            fruit_category_id: payload.fruit_category_id,
+            primary_quantity: payload.primary_quantity || 0,
+            secondary_quantity: payload.secondary_quantity || 0,
+            source: purchaseId,
+            type: 1, // 1 indicates a purchase
+            warehouse_location: null, // Null as per your requirement
+            created_by: id,
+        }
+        await insertRecord('inventory', inventoryPayload, connection)
+
         await connection.commit()
         return h
             .response({
