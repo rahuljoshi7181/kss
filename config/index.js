@@ -17,6 +17,7 @@ const {
     AWS_REGION,
     S3_BUCKET_NAME,
     ALGO_SECRET,
+    JWTEXPIRE,
 } = process.env
 
 const objconf = {
@@ -36,6 +37,7 @@ const objconf = {
     REGION: AWS_REGION,
     BUCKET: S3_BUCKET_NAME,
     ALGO_SECRET: ALGO_SECRET,
+    JWTEXPIRE: JWTEXPIRE || '12h',
 }
 
 module.exports = objconf

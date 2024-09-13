@@ -32,14 +32,18 @@ const insertRecord = async (table, data, connection) => {
     return executeQuery(query, values, connection)
 }
 
-const updateRecord = async (table, data, idColumn, id, connection) => {
+const updateRecord = async (table, data, whereConditions, connection) => {
     const columns = Object.keys(data)
         .map((key) => `${key} = ?`)
         .join(', ')
-    const values = [...Object.values(data), id]
-
-    const query = `UPDATE ${table} SET ${columns} WHERE ${idColumn} = ?`
-    return executeQuery(query, values, connection)
+    const values = [...Object.values(data)]
+    const whereClause = Object.keys(whereConditions)
+        .map((key) => `${key} = ?`)
+        .join(' AND ')
+    const whereValues = Object.values(whereConditions)
+    const queryValues = [...values, ...whereValues]
+    const query = `UPDATE ${table} SET ${columns} WHERE ${whereClause}`
+    return executeQuery(query, queryValues, connection)
 }
 
 const getRecordById = async (table, whereObj, connection) => {

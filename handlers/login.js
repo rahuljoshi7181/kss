@@ -38,7 +38,7 @@ const jwtGenerate = async (req, h) => {
         const redisClient = await buildRedisConnection()
 
         let token = jwt.sign({ id: rows.id }, config.secret, {
-            expiresIn: '1h',
+            expiresIn: config.JWTEXPIRE,
         })
         token = encrypt(token, randomKey)
 
@@ -49,7 +49,8 @@ const jwtGenerate = async (req, h) => {
             last_login: moment().format('YYYY-MM-DD HH:mm:ss'),
             login_count: rows.login_count + 1,
         }
-        await updateRecord('users', payload, 'id', rows.id, connection)
+        const whereConditions = { id: rows.id }
+        await updateRecord('users', payload, whereConditions, connection)
         await redisClient.quit()
         const histPayload = { user_id: rows.id }
         await insertRecord('login_hist', histPayload, connection)

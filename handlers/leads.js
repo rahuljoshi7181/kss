@@ -85,11 +85,11 @@ const updateLeads = async (req, h) => {
             } else {
                 await connection.beginTransaction()
                 delete payload.id
+                const whereConditions = { id: rows.id }
                 await updateRecord(
                     table_name,
                     payload,
-                    'id',
-                    rows.id,
+                    whereConditions,
                     connection
                 )
                 await connection.commit()
