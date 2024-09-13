@@ -53,6 +53,26 @@ module.exports = async (config, { enableRatelimit = true } = {}) => {
                     ignorePaths: ['/api/health'],
                     level: process.env.LOG_LEVEL || 'info',
                     instance: logger,
+                    customRequestLogger: (request) => {
+                        logger.info({
+                            method: request.method,
+                            path: request.path,
+                            headers: request.headers,
+                            payload: request.payload, // Log request body
+                        })
+                    },
+                    customResponseLogger: (request) => {
+                        const response = request.response
+                        if (response && response.source) {
+                            logger.info({
+                                method: request.method,
+                                path: request.path,
+                                statusCode: response.statusCode,
+                                headers: request.headers,
+                                responsePayload: response.source, // Log response body
+                            })
+                        }
+                    },
                 },
             },
             mysqlPlugin,

@@ -280,13 +280,8 @@ const updateUser = async (req, h) => {
         } else {
             await connection.beginTransaction()
             delete payload.id
-            await updateRecord(
-                table_name,
-                payload,
-                'id',
-                rows[0].id,
-                connection
-            )
+            const whereConditions = { id: rows[0].id }
+            await updateRecord(table_name, payload, whereConditions, connection)
             await connection.commit()
             return h
                 .response(

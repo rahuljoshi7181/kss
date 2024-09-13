@@ -1,12 +1,16 @@
 const Boom = require('@hapi/boom')
+const R = require('ramda')
 const messages = require('../messages/messages')
+const moment = require('moment')
 const {
     getRecords,
     insertRecord,
     updateRecord,
+    getRecordById,
 } = require('../models/db-common')
 
 const [table_name, purchase_expense] = ['purchase_details', 'purchase_expense']
+
 const save_purchase = async (req, h) => {
     let connection
     try {
@@ -14,9 +18,13 @@ const save_purchase = async (req, h) => {
         const { id } = req.auth.credentials
         let expenses
         await connection.beginTransaction()
-        const payload = { ...req.payload, created_by: id }
-        /* eslint-disable */
-        if (payload.hasOwnProperty('expenses')) {
+        const payload = {
+            ...req.payload,
+            created_by: id,
+            createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }
+
+        if (R.has('expenses', payload)) {
             expenses = payload.expenses
             delete payload['expenses']
         }
@@ -31,6 +39,7 @@ const save_purchase = async (req, h) => {
                     amount: expense.amount,
                     description: expense.description,
                     created_by: id,
+                    createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
                 }
                 await insertRecord(purchase_expense, expensePayload, connection)
                 totalExpenses += expense.amount
@@ -40,11 +49,11 @@ const save_purchase = async (req, h) => {
         const updatePayload = {
             total_costing: newTotalCosting,
         }
+        let whereConditions = { id: purchaseId }
         await updateRecord(
             table_name,
             updatePayload,
-            'id',
-            purchaseId,
+            whereConditions,
             connection
         )
 
@@ -57,6 +66,7 @@ const save_purchase = async (req, h) => {
             type: 1, // 1 indicates a purchase
             warehouse_location: null, // Null as per your requirement
             created_by: id,
+            createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
         }
         await insertRecord('inventory', inventoryPayload, connection)
 
@@ -113,11 +123,6 @@ const purchaseListing = async (req, h) => {
             { name: `${table_name}.bill_number`, alias: `bill_number` },
             { name: `${table_name}.total_costing`, alias: `total_costing` },
             { name: `${table_name}.bill`, alias: `bill` },
-            { name: `e.name`, alias: `expense` },
-            { name: `pe.amount`, alias: `expense_amount` },
-            { name: `pe.description`, alias: `expense_desc` },
-            { name: `pe.id`, alias: `purchase_expense_id` },
-            { name: `pe.purchase_id`, alias: `purchase_id` },
             {
                 concat: [`fruits.name`, `fruit_categories.name`],
                 alias: 'fruit',
@@ -140,11 +145,6 @@ const purchaseListing = async (req, h) => {
         ]
 
         const joins = [
-            {
-                type: 'LEFT',
-                table: purchase_expense,
-                on: `${purchase_expense}.purchase_id = ${table_name}.id`,
-            },
             {
                 type: 'LEFT',
                 table: 'transport',
@@ -175,16 +175,6 @@ const purchaseListing = async (req, h) => {
                 table: 'users as userss',
                 on: `userss.id = purchase_details.created_by`,
             },
-            {
-                type: 'LEFT',
-                table: 'purchase_expense as pe',
-                on: `pe.purchase_id = purchase_details.id`,
-            },
-            {
-                type: 'LEFT',
-                table: 'expenses as e',
-                on: `e.id = pe.expense_id`,
-            },
         ]
 
         // Get records using the columns and joins
@@ -199,8 +189,6 @@ const purchaseListing = async (req, h) => {
             joins,
             pagination: false,
         })
-
-        rows = getExpenseData(rows)
 
         return h
             .response(
@@ -254,11 +242,6 @@ const getPurchaseData = async (req, h) => {
             { name: `${table_name}.bill_number`, alias: `bill_number` },
             { name: `${table_name}.total_costing`, alias: `total_costing` },
             { name: `${table_name}.bill`, alias: `bill` },
-            { name: `e.name`, alias: `expense` },
-            { name: `pe.amount`, alias: `expense_amount` },
-            { name: `pe.description`, alias: `expense_desc` },
-            { name: `pe.id`, alias: `purchase_expense_id` },
-            { name: `pe.purchase_id`, alias: `purchase_id` },
             {
                 concat: [`fruits.name`, `fruit_categories.name`],
                 alias: 'fruit',
@@ -281,11 +264,6 @@ const getPurchaseData = async (req, h) => {
         ]
 
         const joins = [
-            {
-                type: 'LEFT',
-                table: purchase_expense,
-                on: `${purchase_expense}.purchase_id = ${table_name}.id`,
-            },
             {
                 type: 'LEFT',
                 table: 'transport',
@@ -316,16 +294,6 @@ const getPurchaseData = async (req, h) => {
                 table: 'users as userss',
                 on: `userss.id = purchase_details.created_by`,
             },
-            {
-                type: 'LEFT',
-                table: 'purchase_expense as pe',
-                on: `pe.purchase_id = purchase_details.id`,
-            },
-            {
-                type: 'LEFT',
-                table: 'expenses as e',
-                on: `e.id = pe.expense_id`,
-            },
         ]
 
         // Get records using the columns and joins
@@ -341,8 +309,6 @@ const getPurchaseData = async (req, h) => {
             pagination: false,
             where: 'purchase_details.id=' + id,
         })
-
-        rows = getExpenseData(rows)
 
         return h
             .response(
@@ -366,45 +332,171 @@ const getPurchaseData = async (req, h) => {
     }
 }
 
-function getExpenseData(data) {
-    const result = data.reduce((acc, current) => {
-        // Find if the purchase_id already exists in the accumulator
-        const existing = acc.find((item) => item.id === current.purchase_id)
-
-        // If purchase_id matches the id, add expense details to expense_Data
-        if (current.purchase_id === current.id) {
-            const expenseDetails = {
-                expense: current.expense,
-                expense_amount: current.expense_amount,
-                expense_desc: current.expense_desc,
-                id: current.purchase_expense_id,
-            }
-
-            // If this is the first time, initialize expense_Data array
-            if (!existing) {
-                const newItem = { ...current, expense_Data: [expenseDetails] }
-                acc.push(newItem)
-            } else {
-                let exists = false
-                existing.expense_Data.forEach((value) => {
-                    if (value.id === current.purchase_expense_id) {
-                        exists = true
-                    }
-                })
-                if (!exists) existing.expense_Data.push(expenseDetails)
-            }
-        } else {
-            // If no match, push the item as-is without adding expense_Data
-            acc.push(current)
+const update_purchase = async (req, h) => {
+    let connection
+    try {
+        connection = await req.server.mysqlPool.getConnection()
+        const { id } = req.auth.credentials
+        let payload = {
+            ...req.payload,
+            updated_by: id,
+            updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }
+        let expenses
+        await connection.beginTransaction()
+        const whereObj = {
+            id: payload.id,
+        }
+        const [rows] = await getRecordById(table_name, whereObj, connection)
+        if (rows === undefined || R.isEmpty(rows)) {
+            throw messages.createBadRequestError(' Purchase record not exsist')
         }
 
-        return acc
-    }, [])
+        if (R.has('expenses', payload)) {
+            expenses = payload.expenses
+            delete payload['expenses']
+        }
+        payload = { ...rows, ...payload }
+        let totalExpenses = 0
+        if (expenses && expenses.length > 0) {
+            for (const expense of expenses) {
+                let expensePayload = {
+                    purchase_id: payload.id,
+                    expense_id: expense.expense_id,
+                    amount: expense.amount,
+                    description: expense.description,
+                    updated_by: id,
+                    updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                }
+                if (R.has('ex_id', expense)) {
+                    expensePayload = {
+                        ...expensePayload,
+                        updated_by: id,
+                        updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                    }
+                    let whereConditions = { id: expense.ex_id }
+                    await updateRecord(
+                        purchase_expense,
+                        expensePayload,
+                        whereConditions,
+                        connection
+                    )
+                } else {
+                    expensePayload = {
+                        ...expensePayload,
+                        created_by: id,
+                        createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+                    }
+                    await insertRecord(
+                        purchase_expense,
+                        expensePayload,
+                        connection
+                    )
+                }
 
-    return result
+                totalExpenses += expense.amount
+            }
+        }
+
+        payload.total_costing = totalExpenses
+        let whereConditions = { id: payload.id }
+        await updateRecord(table_name, payload, whereConditions, connection)
+
+        const inventoryPayload = {
+            fruit_category_id: payload.fruit_category_id,
+            primary_quantity: payload.primary_quantity || 0,
+            secondary_quantity: payload.secondary_quantity || 0,
+            updated_by: id,
+            updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }
+        whereConditions = { source: payload.id, type: 1 }
+        await updateRecord(
+            'inventory',
+            inventoryPayload,
+            whereConditions,
+            connection
+        )
+        await connection.commit()
+        return h
+            .response(
+                messages.successResponse(
+                    {},
+                    'Purchase details updated successfully!'
+                )
+            )
+            .code(200)
+    } catch (error) {
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
 }
+
+const expenseListing = async (req, h) => {
+    let connection
+    try {
+        const id = req.query.purchase_id || ''
+        connection = await req.server.mysqlPool.getConnection()
+        const columns = [
+            { name: `e.name`, alias: `expense_name` },
+            { name: `${purchase_expense}.expense_id`, alias: `expense_id` },
+            { name: `${purchase_expense}.amount`, alias: `expense_amount` },
+            { name: `${purchase_expense}.description`, alias: `expense_desc` },
+            { name: `${purchase_expense}.id`, alias: `ex_id` },
+        ]
+
+        const joins = [
+            {
+                type: 'LEFT',
+                table: 'expenses as e',
+                on: `e.id = ${purchase_expense}.expense_id`,
+            },
+        ]
+
+        let rows = await getRecords({
+            table: purchase_expense,
+            columns,
+            order_by: 'desc',
+            order_by_column: `${purchase_expense}.id`,
+            limit: 0,
+            offset: 0,
+            connection,
+            joins,
+            pagination: false,
+            where: `${purchase_expense}.purchase_id=` + id,
+        })
+
+        return h
+            .response(
+                messages.successResponse(
+                    {
+                        listing: rows,
+                    },
+                    'Purchase Expense details fetched successfully!'
+                )
+            )
+            .code(200)
+    } catch (error) {
+        if (Boom.isBoom(error)) {
+            error.output.payload.isError = true
+            throw error
+        } else {
+            throw messages.createBadRequestError(error.message)
+        }
+    } finally {
+        if (connection) await connection.release()
+    }
+}
+
 module.exports = {
     save_purchase,
     purchaseListing,
     getPurchaseData,
+    update_purchase,
+    expenseListing,
 }

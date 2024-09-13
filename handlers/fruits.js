@@ -93,7 +93,8 @@ const update_fruits = async (req, h) => {
 
     try {
         await connection.beginTransaction()
-        await updateRecord(table_name, payload, 'id', rows.id, connection)
+        const whereConditions = { id: rows.id }
+        await updateRecord(table_name, payload, whereConditions, connection)
         await connection.commit()
         return h
             .response(
@@ -164,7 +165,8 @@ const update_fruits_categories = async (req, h) => {
 
     try {
         await connection.beginTransaction()
-        await updateRecord(fruit_category, payload, 'id', rows.id, connection)
+        const whereConditions = { id: rows.id }
+        await updateRecord(fruit_category, payload, whereConditions, connection)
         await connection.commit()
         return h
             .response(
@@ -312,11 +314,11 @@ const update_mandi_rates = async (req, h) => {
         } else {
             delete payload.id
             await connection.beginTransaction()
+            const whereConditions = { id: rows[0].id }
             await updateRecord(
                 mandi_rates,
                 payload,
-                'id',
-                rows[0].id,
+                whereConditions,
                 connection
             )
             await connection.commit()

@@ -88,6 +88,7 @@ const getForms = async (req, h) => {
             if (!sectionsMap[field.section_id]) {
                 sectionsMap[field.section_id] = {
                     section_id: field.section_id,
+                    recursion: field.recursion,
                     section_title: field.section_title,
                     sort_order: field.section_id, // Assuming sort_order is based on section_id
                     fields: [],
@@ -122,6 +123,8 @@ const getForms = async (req, h) => {
                         name: data.name,
                     }
                 })
+            } else {
+                optionsVal = [{}]
             }
 
             sectionsMap[field.section_id].fields.push({

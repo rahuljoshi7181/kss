@@ -32,6 +32,26 @@ const s3Plugin = {
                 logger.error('Error generating signed URL:' + error)
             }
         })
+
+        // server.expose('uploadFile', async (fileContent, fileName, fileType) => {
+        //     try {
+        //         const uploadParams = {
+        //             Bucket: config.BUCKET,
+        //             Key: fileName,
+        //             Body: fileContent,
+        //             ContentType: fileType,
+        //         }
+
+        //         const data = await s3Client.send(
+        //             new PutObjectCommand(uploadParams)
+        //         )
+        //         logger.info(`File uploaded successfully. ${fileName}`)
+        //         return data
+        //     } catch (error) {
+        //         logger.error('Error uploading file: ' + error)
+        //         throw error
+        //     }
+        // })
     },
 }
 
