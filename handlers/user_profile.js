@@ -11,7 +11,7 @@ const {
     insertRecord,
     updateRecord,
 } = require('../models/db-common')
-const { pagination } = require('../helper')
+
 const [table_name] = ['users']
 
 const profile = async (req, h) => {
@@ -40,15 +40,30 @@ const userListing = async (req, h) => {
     let connection
     try {
         connection = await req.server.mysqlPool.getConnection()
+        const page = parseInt(req.query.page, 10) || 1
+        const items_per_page = parseInt(req.query.limit, 10) || 10
+        const sortingDesc = req.query['sorting[0][desc]'] === 'true'
+        const sortDirection = sortingDesc ? 'DESC' : 'ASC'
+        const sortField = req.query['sorting[0][id]'] || 'id'
+        const filter = req?.query?.filters
+            ? JSON.parse(req?.query?.filters)
+            : ''
+
+        const globalFilter = req?.query?.globalFilter
+            ? JSON.parse(req?.query?.globalFilter)
+            : ''
+
+        const offset = (page - 1) * items_per_page
         const columns = [
             { name: table_name + '.id', alias: 'user_id' },
-            { name: table_name + '.name', alias: 'name' },
-            { name: table_name + '.username', alias: 'mobile' },
-            { name: 'area.colony_name', alias: 'area_name' },
+            { name: table_name + '.name', alias: 'name', global: true },
+            { name: table_name + '.username', alias: 'mobile', global: true },
+            { name: 'area.colony_name', alias: 'area_name', global: true },
             { name: 'city.name', alias: 'city' },
             { name: 'state.name', alias: 'state' },
             { name: 'last_login', alias: 'last_login' },
             { name: table_name + '.is_active', alias: 'status' },
+            { name: table_name + '.createdAt', alias: 'createdAt' },
         ]
 
         const joins = [
@@ -65,22 +80,44 @@ const userListing = async (req, h) => {
             { type: 'LEFT', table: 'state', on: 'state.id = city.state_id' },
         ]
 
+        let totalRecords = await getRecordsCount({
+            table: table_name,
+            columns,
+            connection,
+            joins,
+            whereConditionsFilter: filter,
+            globalFilter,
+        })
+
+        const totalRecordCount =
+            totalRecords.length === 0 ? 0 : totalRecords[0].total_records
+
+        const totalPages = Math.ceil(totalRecordCount / items_per_page)
+
         const rows = await getRecords({
             table: table_name,
             columns,
-            order_by: 'desc',
-            order_by_column: 'users.id',
-            limit: 0,
-            offset: 0,
+            order_by: sortDirection,
+            order_by_column: sortField,
+            limit: items_per_page,
+            offset,
             connection,
             joins,
-            pagination: false,
+            pagination: true,
+            whereConditionsFilter: filter,
+            globalFilter,
         })
 
         return h
             .response(
                 messages.successResponse(
-                    rows,
+                    {
+                        listing: rows,
+                        page,
+                        pageSize: items_per_page,
+                        totalPages: totalPages,
+                        totalRecord: totalRecordCount,
+                    },
                     'User Listing fetched successfully!'
                 )
             )
@@ -143,20 +180,10 @@ const userListingWithPagination = async (req, h) => {
             throw messages.createNotFoundError('User not found!')
         }
 
-        const totalRecords = await getRecordsCount({
-            table: table_name,
-            order_by: 'desc',
-            order_by_column: table_name + '.id',
-            connection,
-            joins,
-        })
-        const pagePayload = pagination(totalRecords, page, items_per_page)
-        const response = { result: rows, ...pagePayload }
-
         return h
             .response(
                 messages.successResponse(
-                    response,
+                    { list: rows },
                     'User Listing fetched successfully!'
                 )
             )

@@ -61,7 +61,7 @@ const getForms = async (req, h) => {
             { name: `${form_field}.settings`, alias: 'settings' },
         ]
 
-        const whereCondition = `${table}.form_title='${formName}'`
+        const whereCondition = [{ id: 'form_title', value: formName }]
         const rows = await getRecords({
             table,
             columns,
@@ -72,7 +72,7 @@ const getForms = async (req, h) => {
             connection,
             joins,
             pagination: false,
-            where: whereCondition,
+            whereConditions: whereCondition,
         })
         const transformedData = {
             form_id: rows[0].form_id,
@@ -184,7 +184,7 @@ const getDynamicData = async (req, h) => {
                       let result = data.includes('as')
                           ? data.split('as')
                           : [data]
-                      console.log(result)
+
                       return { name: result[0], alias: result[1] || result[0] }
                   })
                 : []

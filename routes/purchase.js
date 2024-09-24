@@ -112,7 +112,12 @@ module.exports = [
         path: '/v1/purchase/listing',
         config: {
             handler: purchaseListing,
-            validate: {},
+            validate: {
+                query: Joi.object({
+                    page: Joi.number().integer().min(1).default(1),
+                    limit: Joi.number().integer().min(1).default(10),
+                }).unknown(true),
+            },
         },
     },
     {

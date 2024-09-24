@@ -93,7 +93,6 @@ module.exports = [
             handler: save_mandi_rates,
             validate: {
                 payload: Joi.object({
-                    unit: Joi.number().integer().required(),
                     user_id: Joi.number().integer().required(),
                     fruit_id: Joi.number().integer().required(),
                     city_id: Joi.number().integer().required(),

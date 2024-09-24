@@ -1,7 +1,7 @@
 const R = require('ramda')
 const messages = require('../messages/messages')
 const Boom = require('@hapi/boom')
-// const { isObjectNotEmptyOrUndefined } = require('../constants')
+const { isObjectNotEmptyOrUndefined } = require('../constants')
 const {
     insertRecord,
     getRecordById,
@@ -236,7 +236,7 @@ const getMandiRates = async (req, h) => {
                 on: `vendor.id = ${mandi_rates}.user_id`,
             },
         ]
-        /* eslint-disable */
+
         const rows = await getRecords({
             table: mandi_rates,
             columns,
@@ -276,16 +276,29 @@ const save_mandi_rates = async (req, h) => {
     const connection = await req.server.mysqlPool.getConnection()
     try {
         await connection.beginTransaction()
-        await insertRecord(mandi_rates, payload, connection)
-        await connection.commit()
-        return h
-            .response(
-                messages.successResponse(
-                    {},
-                    `Mandi rate is inserted successfully !`
+
+        const whereObj = {
+            user_id: payload.user_id,
+            fruit_id: payload.fruit_id,
+            city_id: payload.city_id,
+            rate_date: payload.rate_date,
+        }
+        const [rows] = await getRecordById(mandi_rates, whereObj, connection)
+        console.log(rows, ' rows ')
+        if (!isObjectNotEmptyOrUndefined(rows)) {
+            await insertRecord(mandi_rates, payload, connection)
+            await connection.commit()
+            return h
+                .response(
+                    messages.successResponse(
+                        {},
+                        `Mandi rate is inserted successfully !`
+                    )
                 )
-            )
-            .code(201)
+                .code(201)
+        } else {
+            throw Boom.conflict('Record already exists for this date!')
+        }
     } catch (error) {
         await connection.rollback()
         if (Boom.isBoom(error)) {

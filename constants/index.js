@@ -66,6 +66,39 @@ const getStartAndEnd = R.compose(
     ])
 )
 
+const buildWhereCondition = (data) => {
+    const whereClause = data.map((item) => `${item.id} = ?`).join(' AND ')
+    const whereValues = data.map((item) => item.value)
+    return { whereClause, whereValues }
+}
+
+const replaceFilterWithColumnNames = (filter, columns) => {
+    return filter.map((item) => {
+        const matchingColumn = columns.find((col) => col.alias === item.id)
+        if (matchingColumn) {
+            return { id: matchingColumn.name, value: item.value }
+        }
+        return item
+    })
+}
+
+const generateWhereClauseWithLike = (globalFilterValue, columns) => {
+    const globalColumns = columns.filter((col) => col.global)
+    const whereClause = globalColumns
+        .map((col) => `${col.name} LIKE '%${globalFilterValue}%'`)
+        .join(' OR ')
+
+    return whereClause
+}
+
+const buildLikeCondition = (filter) => {
+    const whereClause = filter
+        .map((col) => `${col.id} LIKE '%${col.value}%'`)
+        .join(' AND ')
+
+    return whereClause
+}
+
 module.exports = {
     HEADER_ICM_CO,
     UserTypes,
@@ -79,4 +112,8 @@ module.exports = {
     createRemoveFunction,
     globalVariables,
     getStartAndEnd,
+    buildWhereCondition,
+    replaceFilterWithColumnNames,
+    generateWhereClauseWithLike,
+    buildLikeCondition,
 }

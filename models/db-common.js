@@ -1,27 +1,20 @@
 const R = require('ramda')
+const {
+    buildWhereCondition,
+    replaceFilterWithColumnNames,
+    generateWhereClauseWithLike,
+    buildLikeCondition,
+    isNotNilOrEmpty,
+} = require('../constants')
+
 const executeQuery = async (query, params, db) => {
-    console.log(query, params)
+    console.log(query, ' ===> PAAMS', params)
     try {
         const [results] = await db.execute(query, params)
         return results
     } catch (err) {
         throw new Error('Database operation failed')
     }
-}
-
-const buildWhereClause = (whereObj) => {
-    if (R.isEmpty(whereObj) || R.isNil(whereObj)) {
-        return ''
-    }
-    const whereConditions = Object.keys(whereObj)
-        .map((key) => {
-            if (whereObj[key].not) {
-                return `${key} != ?`
-            }
-            return `${key} = ?`
-        })
-        .join(' AND ')
-    return ` WHERE ${whereConditions}`
 }
 
 const insertRecord = async (table, data, connection) => {
@@ -48,9 +41,11 @@ const updateRecord = async (table, data, whereConditions, connection) => {
 
 const getRecordById = async (table, whereObj, connection) => {
     const whereClause = buildWhereClause(whereObj)
+
+    const whereValues = Object.values(whereObj).map((value) =>
+        typeof value === 'object' ? value.value : value
+    )
     const query = `SELECT * FROM ${table}${whereClause}`
-    const whereValues = Object.values(whereObj || {})
-    console.log(query)
     return executeQuery(query, whereValues, connection)
 }
 
@@ -62,21 +57,63 @@ const getAllRecords = async (table, connection) => {
 const getRecordsCount = async (options) => {
     const {
         table,
+        columns,
         order_by = 'desc',
-        order_by_column = 'id',
+        order_by_column = table + '.id',
         connection,
         joins = [],
-        where,
+        whereConditions = [],
+        whereConditionsFilter,
+        globalFilter,
     } = options
+
+    const order_by_columns = getOrderByColumnValue(columns, order_by_column)
     const joinString = joins
         .map((join) => {
             const { type = 'INNER', table: joinTable, on } = join
             return `${type} JOIN ${joinTable} ON ${on}`
         })
         .join(' ')
-    const whereCondition = where ? ` WHERE ${where} ` : ''
-    const query = `SELECT count(${table}.id) FROM ${table} ${joinString}${whereCondition} order by ${order_by_column} ${order_by}`
-    return executeQuery(query, '', connection)
+    let where =
+        whereConditions.length !== 0
+            ? buildWhereCondition(
+                  replaceFilterWithColumnNames(whereConditions, columns)
+              )
+            : []
+
+    let whereConditionsFilters =
+        whereConditionsFilter.length !== 0
+            ? buildLikeCondition(
+                  replaceFilterWithColumnNames(whereConditionsFilter, columns)
+              )
+            : []
+
+    const whereKeys = Object.keys(where)
+    const gloabLFilteringWhere = globalFilter
+        ? generateWhereClauseWithLike(globalFilter, columns)
+        : ''
+
+    let whereCondition =
+        whereKeys.length > 0
+            ? isNotNilOrEmpty(gloabLFilteringWhere)
+                ? ` WHERE (${where.whereClause}) AND (${gloabLFilteringWhere} `
+                : ` WHERE (${where.whereClause})`
+            : isNotNilOrEmpty(gloabLFilteringWhere)
+              ? ` WHERE (${gloabLFilteringWhere})`
+              : ''
+
+    whereCondition =
+        isNotNilOrEmpty(whereCondition) &&
+        isNotNilOrEmpty(whereConditionsFilters)
+            ? `${whereCondition} AND (${whereConditionsFilters})`
+            : isNotNilOrEmpty(whereConditionsFilters)
+              ? ` WHERE ${whereConditionsFilters}`
+              : isNotNilOrEmpty(whereCondition)
+                ? whereCondition
+                : ''
+
+    const query = `SELECT count(${table}.id) as total_records FROM ${table} ${joinString}${whereCondition} order by ${order_by_columns} ${order_by}`
+    return executeQuery(query, where?.whereValues || '', connection)
 }
 
 const getRecords = async (options) => {
@@ -90,24 +127,39 @@ const getRecords = async (options) => {
         connection,
         joins = [],
         pagination = false,
-        where = '',
+        whereConditions = [],
+        globalFilter,
+        whereConditionsFilter = [],
     } = options
+
+    const order_by_columns = getOrderByColumnValue(columns, order_by_column)
+
+    let where =
+        whereConditions.length !== 0
+            ? buildWhereCondition(
+                  replaceFilterWithColumnNames(whereConditions, columns)
+              )
+            : []
+
+    let whereConditionsFilters =
+        whereConditionsFilter.length !== 0
+            ? buildLikeCondition(
+                  replaceFilterWithColumnNames(whereConditionsFilter, columns)
+              )
+            : []
 
     const columnsString =
         Array.isArray(columns) && columns.length > 0
             ? columns
                   .map((col) => {
-                      // Check if the column requires concatenation
                       if (col.concat) {
-                          // Use CONCAT_WS for concatenating first_name, middle_name, and last_name
                           return `CONCAT_WS(' ', ${col.concat.join(', ')}) AS ${col.alias}`
                       } else {
-                          // Standard column selection with alias
                           return `${col.name} AS ${col.alias}`
                       }
                   })
                   .join(', ')
-            : ''
+            : '*'
 
     const joinString =
         Array.isArray(joins) && joins.length > 0
@@ -118,12 +170,75 @@ const getRecords = async (options) => {
                   })
                   .join(' ')
             : ''
-    const order = ` order by ${order_by_column} ${order_by}`
+
+    const order = ` ORDER BY ${order_by_columns} ${order_by}`
     const _offset = pagination ? ` OFFSET ${offset}` : ''
-    const whereCondition = where ? ` WHERE ${where} ` : ''
-    const query_limit = limit ? `LIMIT ${limit}` : ''
+    const query_limit = limit ? ` LIMIT ${limit}` : ''
+    const whereKeys = Object.keys(where)
+    const gloabLFilteringWhere = globalFilter
+        ? generateWhereClauseWithLike(globalFilter, columns)
+        : ''
+
+    let whereCondition =
+        whereKeys.length > 0
+            ? isNotNilOrEmpty(gloabLFilteringWhere)
+                ? ` WHERE (${where.whereClause}) AND (${gloabLFilteringWhere} `
+                : ` WHERE (${where.whereClause})`
+            : isNotNilOrEmpty(gloabLFilteringWhere)
+              ? ` WHERE (${gloabLFilteringWhere})`
+              : ''
+
+    whereCondition =
+        isNotNilOrEmpty(whereCondition) &&
+        isNotNilOrEmpty(whereConditionsFilters)
+            ? `${whereCondition} AND (${whereConditionsFilters})`
+            : isNotNilOrEmpty(whereConditionsFilters)
+              ? ` WHERE ${whereConditionsFilters}`
+              : isNotNilOrEmpty(whereCondition)
+                ? whereCondition
+                : ''
+
     const query = `SELECT ${columnsString} FROM ${table} ${joinString}${whereCondition} ${order} ${query_limit} ${_offset}`
-    return executeQuery(query, '', connection)
+
+    return executeQuery(query, where?.whereValues || '', connection)
+}
+
+const getOrderByColumnValue = (columns, order_by_column) => {
+    for (const column of columns) {
+        if (column?.name) {
+            const columnParts = column.name.split('.')
+            if (columnParts.length > 0) {
+                const columnName = columnParts[columnParts.length - 1]
+                if (columnName === order_by_column) {
+                    return (
+                        columnParts[columnParts.length - 2] +
+                        '.' +
+                        order_by_column
+                    )
+                }
+            }
+        }
+    }
+
+    return order_by_column
+}
+
+const buildWhereClause = (whereObj) => {
+    if (R.isEmpty(whereObj) || R.isNil(whereObj)) {
+        return ''
+    }
+
+    const whereConditions = Object.keys(whereObj)
+        .map((key) => {
+            const value = whereObj[key]
+            if (value && value.not) {
+                return `${key} != ?`
+            }
+            return `${key} = ?`
+        })
+        .join(' AND ')
+
+    return ` WHERE ${whereConditions}`
 }
 
 module.exports = {

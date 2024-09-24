@@ -2,7 +2,7 @@ CREATE TABLE daily_fruit_rates (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fruit_id INT NOT NULL,
     city_id INT NOT NULL,
-    rate DECIMAL(10, 2) NOT NULL,
+    primary_rates DECIMAL(10, 2) NOT NULL,
     rate_date DATE NOT NULL,
     created_by VARCHAR(10) NOT NULL,
     updated_by INT DEFAULT NULL,
