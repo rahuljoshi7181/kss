@@ -29,7 +29,9 @@ module.exports = [
             handler: user_register,
             validate: {
                 payload: Joi.object({
-                    mobile: Joi.string().required(),
+                    mobile: Joi.string()
+                        .pattern(/^[0-9]{10}$/)
+                        .required(),
                     password: Joi.string().required(),
                     user_type: Joi.number().integer(),
                     address: Joi.string(),

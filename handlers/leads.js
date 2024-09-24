@@ -11,6 +11,7 @@ const {
     getRecordById,
     insertRecord,
     updateRecord,
+    getRecordsCount,
 } = require('../models/db-common')
 const [table_name, userTable, fruitTable, fruitCat, follow_ups] = [
     'leads',
@@ -120,17 +121,39 @@ const getLeads = async (req, h) => {
     let connection
     try {
         connection = await req.server.mysqlPool.getConnection()
+        const page = parseInt(req.query.page, 10) || 1
+        const items_per_page = parseInt(req.query.limit, 10) || 10
+        const sortingDesc = req.query['sorting[0][desc]'] === 'true'
+        const sortDirection = sortingDesc ? 'DESC' : 'ASC'
+        const sortField = req.query['sorting[0][id]'] || 'id'
+        const filter = req?.query?.filters
+            ? JSON.parse(req?.query?.filters)
+            : ''
 
+        const globalFilter = req?.query?.globalFilter
+            ? JSON.parse(req?.query?.globalFilter)
+            : ''
+
+        const offset = (page - 1) * items_per_page
         const columns = [
-            { name: userTable + '.name', alias: 'name' },
+            { name: userTable + '.name', alias: 'name', global: true },
             { name: table_name + '.id', alias: 'id' },
-            { name: userTable + '.username', alias: 'mobile' },
+            { name: userTable + '.username', alias: 'mobile', global: true },
             {
                 concat: [`${fruitTable}.name`, `${fruitCat}.name`],
                 alias: 'fruit',
+                global: true,
             },
-            { name: `${table_name}.business_type`, alias: 'business_type' },
-            { name: `${table_name}.lead_status`, alias: 'lead_status' },
+            {
+                name: `${table_name}.business_type`,
+                alias: 'business_type',
+                global: true,
+            },
+            {
+                name: `${table_name}.lead_status`,
+                alias: 'lead_status',
+                global: true,
+            },
             {
                 name: `${table_name}.potential_volume`,
                 alias: 'potential_volume',
@@ -163,16 +186,32 @@ const getLeads = async (req, h) => {
             },
         ]
 
+        let totalRecords = await getRecordsCount({
+            table: table_name,
+            columns,
+            connection,
+            joins,
+            whereConditionsFilter: filter,
+            globalFilter,
+        })
+
+        const totalRecordCount =
+            totalRecords.length === 0 ? 0 : totalRecords[0].total_records
+
+        const totalPages = Math.ceil(totalRecordCount / items_per_page)
+
         const rows = await getRecords({
             table: table_name,
             columns,
-            order_by: 'desc',
-            order_by_column: table_name + '.id',
-            limit: 0,
-            offset: 0,
+            order_by: sortDirection,
+            order_by_column: sortField,
+            limit: items_per_page,
+            offset,
             connection,
             joins,
-            pagination: false,
+            pagination: true,
+            whereConditionsFilter: filter,
+            globalFilter,
         })
 
         rows.forEach((data) => {
@@ -189,6 +228,10 @@ const getLeads = async (req, h) => {
                 messages.successResponse(
                     {
                         listing: rows,
+                        page,
+                        pageSize: items_per_page,
+                        totalPages: totalPages,
+                        totalRecord: totalRecordCount,
                         business_type: VendorType,
                         lead_status: LeadStatus,
                     },

@@ -98,8 +98,8 @@ module.exports = [
             validate: {
                 query: Joi.object({
                     page: Joi.number().integer().min(1).default(1),
-                    items_per_page: Joi.number().integer().min(1).default(10),
-                }),
+                    limit: Joi.number().integer().min(1).default(10),
+                }).unknown(true),
             },
         },
     },

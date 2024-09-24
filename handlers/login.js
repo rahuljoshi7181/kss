@@ -40,10 +40,11 @@ const jwtGenerate = async (req, h) => {
         let token = jwt.sign({ id: rows.id }, config.secret, {
             expiresIn: config.JWTEXPIRE,
         })
+
         token = encrypt(token, randomKey)
 
         const key = getStartAndEnd(token)
-        await setData(redisClient, `ENCRYPT_${key}`, randomKey, 3600)
+        await setData(redisClient, `ENCRYPT_${key}`, randomKey, 172800)
 
         const payload = {
             last_login: moment().format('YYYY-MM-DD HH:mm:ss'),

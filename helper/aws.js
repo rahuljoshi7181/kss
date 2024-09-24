@@ -17,7 +17,7 @@ const s3Plugin = {
     register: async function (server) {
         server.expose('getSignedUrl', async (objectKey) => {
             let expiresIn = 3600
-            console.log(objectKey)
+
             try {
                 const command = new GetObjectCommand({
                     Bucket: config.BUCKET,

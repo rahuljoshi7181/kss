@@ -7,6 +7,7 @@ const {
     insertRecord,
     updateRecord,
     getRecordById,
+    getRecordsCount,
 } = require('../models/db-common')
 
 const [table_name, purchase_expense] = ['purchase_details', 'purchase_expense']
@@ -98,6 +99,20 @@ const purchaseListing = async (req, h) => {
     let connection
     try {
         connection = await req.server.mysqlPool.getConnection()
+        const page = parseInt(req.query.page, 10) || 1
+        const items_per_page = parseInt(req.query.limit, 10) || 10
+        const sortingDesc = req.query['sorting[0][desc]'] === 'true'
+        const sortDirection = sortingDesc ? 'DESC' : 'ASC'
+        const sortField = req.query['sorting[0][id]'] || 'id'
+        const filter = req?.query?.filters
+            ? JSON.parse(req?.query?.filters)
+            : ''
+
+        const globalFilter = req?.query?.globalFilter
+            ? JSON.parse(req?.query?.globalFilter)
+            : ''
+
+        const offset = (page - 1) * items_per_page
         const columns = [
             { name: `${table_name}.id`, alias: `id` },
             {
@@ -127,12 +142,13 @@ const purchaseListing = async (req, h) => {
                 concat: [`fruits.name`, `fruit_categories.name`],
                 alias: 'fruit',
             },
-            { name: `users.name`, alias: `vendor_name` },
-            { name: `userss.name`, alias: `created_by` },
+            { name: `users.name`, alias: `vendor_name`, global: true },
+            { name: `userss.name`, alias: `created_by`, global: true },
             { name: `purchase_details.createdAt`, alias: `createdAt` },
             {
                 name: `transport.transporter_company_name`,
                 alias: `transporter_name`,
+                global: true,
             },
             {
                 name: `transport.office_address`,
@@ -141,6 +157,7 @@ const purchaseListing = async (req, h) => {
             {
                 name: `transport.contact_number`,
                 alias: `transporter_contact_number`,
+                global: true,
             },
         ]
 
@@ -177,17 +194,32 @@ const purchaseListing = async (req, h) => {
             },
         ]
 
-        // Get records using the columns and joins
-        let rows = await getRecords({
+        let totalRecords = await getRecordsCount({
             table: table_name,
             columns,
-            order_by: 'desc',
-            order_by_column: `${table_name}.id`,
-            limit: 0,
-            offset: 0,
             connection,
             joins,
-            pagination: false,
+            whereConditionsFilter: filter,
+            globalFilter,
+        })
+
+        const totalRecordCount =
+            totalRecords.length === 0 ? 0 : totalRecords[0].total_records
+
+        const totalPages = Math.ceil(totalRecordCount / items_per_page)
+        // Get records using the columns and joins
+        const rows = await getRecords({
+            table: table_name,
+            columns,
+            order_by: sortDirection,
+            order_by_column: sortField,
+            limit: items_per_page,
+            offset,
+            connection,
+            joins,
+            pagination: true,
+            whereConditionsFilter: filter,
+            globalFilter,
         })
 
         return h
@@ -195,6 +227,10 @@ const purchaseListing = async (req, h) => {
                 messages.successResponse(
                     {
                         listing: rows,
+                        page,
+                        pageSize: items_per_page,
+                        totalPages: totalPages,
+                        totalRecord: totalRecordCount,
                     },
                     'Purchase details fetched successfully!'
                 )
