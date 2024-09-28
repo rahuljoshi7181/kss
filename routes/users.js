@@ -85,7 +85,7 @@ module.exports = [
                         .trim()
                         .pattern(/^[0-9]$/)
                         .optional(),
-                    is_active: Joi.boolean().optional(),
+                    is_active: Joi.string().valid('1', '0').optional(),
                 }).min(2),
             },
         },

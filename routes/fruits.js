@@ -83,7 +83,12 @@ module.exports = [
         path: '/v1/get-mandi-rates',
         config: {
             handler: getMandiRates,
-            validate: {},
+            validate: {
+                query: Joi.object({
+                    page: Joi.number().integer().min(1).default(1),
+                    limit: Joi.number().integer().min(1).default(10),
+                }).unknown(true),
+            },
         },
     },
     {

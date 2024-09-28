@@ -133,6 +133,7 @@ const purchaseListing = async (req, h) => {
             },
             { name: `${table_name}.transport_id`, alias: `transport_id` },
             { name: `${table_name}.city_id`, alias: `city_id` },
+            { name: `city.name`, alias: `city_name` },
             { name: `${table_name}.address`, alias: `address` },
             { name: `${table_name}.notes`, alias: `notes` },
             { name: `${table_name}.bill_number`, alias: `bill_number` },
@@ -191,6 +192,11 @@ const purchaseListing = async (req, h) => {
                 type: 'LEFT',
                 table: 'users as userss',
                 on: `userss.id = purchase_details.created_by`,
+            },
+            {
+                type: 'LEFT',
+                table: 'city as city',
+                on: `city.id = purchase_details.city_id`,
             },
         ]
 
