@@ -1,0 +1,12 @@
+CREATE TABLE menu (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    menu_name VARCHAR(255) NOT NULL,
+    menu_category ENUM('app', 'website') NOT NULL,
+    url VARCHAR(255),
+    parent_menu_id INT DEFAULT NULL,
+    icon VARCHAR(255) DEFAULT NULL,
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

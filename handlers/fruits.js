@@ -8,6 +8,7 @@ const {
     getAllRecords,
     updateRecord,
     getRecords,
+    getRecordsCount,
 } = require('../models/db-common')
 const [
     table_name,
@@ -188,21 +189,41 @@ const getMandiRates = async (req, h) => {
     let connection
     try {
         connection = await req.server.mysqlPool.getConnection()
+        const page = parseInt(req.query.page, 10) || 1
+        const items_per_page = parseInt(req.query.limit, 10) || 10
+        const sortingDesc = req.query['sorting[0][desc]'] === 'true'
+        const sortDirection = sortingDesc ? 'DESC' : 'ASC'
+        const sortField = req.query['sorting[0][id]'] || 'id'
+        const filter = req?.query?.filters
+            ? JSON.parse(req?.query?.filters)
+            : ''
+
+        const globalFilter = req?.query?.globalFilter
+            ? JSON.parse(req?.query?.globalFilter)
+            : ''
+
+        const offset = (page - 1) * items_per_page
         const columns = [
             { name: mandi_rates + '.id', alias: 'id' },
             {
                 concat: [`fruits.name`, `${fruit_categories}.name`],
                 alias: 'fruit',
+                global: true,
             },
-            { name: `${city_table}.name`, alias: 'city_name' },
+            { name: `${city_table}.name`, alias: 'city_name', global: true },
             { name: `${city_table}.name_hindi`, alias: 'city_name_hindi' },
             { name: `${mandi_rates}.primary_rate`, alias: 'primary_rate' },
             { name: `${mandi_rates}.secondary_rate`, alias: 'secondary_rate' },
             { name: `${units}.primary_unit`, alias: 'pri_unit' },
             { name: `${units}.secondary_unit`, alias: 'sec_unit' },
-            { name: `${mandi_rates}.rate_date`, alias: 'rate_date' },
-            { name: `vendor.name`, alias: 'vendor_name' },
-            { name: `${users}.name`, alias: 'user_name' },
+            {
+                name: `${mandi_rates}.rate_date`,
+                alias: 'rate_date',
+                global: true,
+            },
+            { name: `vendor.name`, alias: 'vendor_name', global: true },
+            { name: `${users}.name`, alias: 'user_name', global: true },
+            { name: `${mandi_rates}.createdAt`, alias: 'createdAt' },
         ]
         const joins = [
             {
@@ -237,22 +258,43 @@ const getMandiRates = async (req, h) => {
             },
         ]
 
+        let totalRecords = await getRecordsCount({
+            table: mandi_rates,
+            columns,
+            connection,
+            joins,
+            whereConditionsFilter: filter,
+            globalFilter,
+        })
+
+        const totalRecordCount =
+            totalRecords.length === 0 ? 0 : totalRecords[0].total_records
+
+        const totalPages = Math.ceil(totalRecordCount / items_per_page)
+
         const rows = await getRecords({
             table: mandi_rates,
             columns,
-            order_by: 'desc',
-            order_by_column: `${mandi_rates}.id`,
-            limit: 0,
-            offset: 0,
+            order_by: sortDirection,
+            order_by_column: sortField,
+            limit: items_per_page,
+            offset,
             connection,
             joins,
-            pagination: false,
-            where: '',
+            pagination: true,
+            whereConditionsFilter: filter,
+            globalFilter,
         })
         return h
             .response(
                 messages.successResponse(
-                    rows,
+                    {
+                        listing: rows,
+                        page,
+                        pageSize: items_per_page,
+                        totalPages: totalPages,
+                        totalRecord: totalRecordCount,
+                    },
                     `Daily rates fatched successfully !`
                 )
             )
@@ -284,7 +326,7 @@ const save_mandi_rates = async (req, h) => {
             rate_date: payload.rate_date,
         }
         const [rows] = await getRecordById(mandi_rates, whereObj, connection)
-        console.log(rows, ' rows ')
+
         if (!isObjectNotEmptyOrUndefined(rows)) {
             await insertRecord(mandi_rates, payload, connection)
             await connection.commit()

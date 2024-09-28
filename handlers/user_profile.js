@@ -55,11 +55,16 @@ const userListing = async (req, h) => {
 
         const offset = (page - 1) * items_per_page
         const columns = [
-            { name: table_name + '.id', alias: 'user_id' },
+            { name: table_name + '.id', alias: 'id' },
             { name: table_name + '.name', alias: 'name', global: true },
             { name: table_name + '.username', alias: 'mobile', global: true },
+            { name: table_name + '.username', alias: 'username' },
+            { name: table_name + '.address', alias: 'address' },
+            { name: table_name + '.is_active', alias: 'is_active' },
             { name: 'area.colony_name', alias: 'area_name', global: true },
-            { name: 'city.name', alias: 'city' },
+            { name: 'users.area', alias: 'area' },
+            { name: 'state.id', alias: 'state' },
+            { name: 'users.city', alias: 'city' },
             { name: 'state.name', alias: 'state' },
             { name: 'last_login', alias: 'last_login' },
             { name: table_name + '.is_active', alias: 'status' },
@@ -238,6 +243,7 @@ const save = async (req, h) => {
                 password,
                 last_login,
                 created_by: id,
+                createdAt: moment().format('YYYY-MM-DD HH:mm:ss'),
             }
             await insertRecord(table_name, payload, connection)
             await connection.commit()
@@ -296,7 +302,11 @@ const updateUser = async (req, h) => {
     let connection
     try {
         connection = await req.server.mysqlPool.getConnection()
-        let payload = { ...req.payload, updated_by: req.auth.credentials.id }
+        let payload = {
+            ...req.payload,
+            updated_by: req.auth.credentials.id,
+            updatedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }
         const whereObj = {
             id: req.payload.id,
         }

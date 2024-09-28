@@ -59,7 +59,7 @@ const jwtGenerate = async (req, h) => {
         return h
             .response(
                 messages.successResponse(
-                    { token },
+                    { token, is_admin: rows.is_admin },
                     `${mobile} is authenticated successfully!`
                 )
             )

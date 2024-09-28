@@ -207,7 +207,7 @@ const getOrderByColumnValue = (columns, order_by_column) => {
     for (const column of columns) {
         if (column?.name) {
             const columnParts = column.name.split('.')
-            if (columnParts.length > 0) {
+            if (columnParts.length > 1) {
                 const columnName = columnParts[columnParts.length - 1]
                 if (columnName === order_by_column) {
                     return (
@@ -216,6 +216,8 @@ const getOrderByColumnValue = (columns, order_by_column) => {
                         order_by_column
                     )
                 }
+            } else {
+                return order_by_column
             }
         }
     }
