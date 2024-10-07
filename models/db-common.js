@@ -1,4 +1,5 @@
 const R = require('ramda')
+const logger = require('../logger')
 const {
     buildWhereCondition,
     replaceFilterWithColumnNames,
@@ -8,7 +9,8 @@ const {
 } = require('../constants')
 
 const executeQuery = async (query, params, db) => {
-    console.log(query, ' ===> PAAMS', params)
+    logger.info({ query, params })
+
     try {
         const [results] = await db.execute(query, params)
         return results

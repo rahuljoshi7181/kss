@@ -5,8 +5,12 @@ const logger = require('../logger')
 const R = require('ramda')
 const messages = require('../messages/messages')
 const { generateRandomKey, encrypt } = require('../helper')
-const { getStartAndEnd } = require('../constants')
-const { setData, buildRedisConnection } = require('../redis/redis-client')
+const { getStartAndEnd, isNotEmpty } = require('../constants')
+const {
+    getData,
+    setData,
+    buildRedisConnection,
+} = require('../redis/redis-client')
 const {
     insertRecord,
     getRecordById,
@@ -17,15 +21,16 @@ const moment = require('moment')
 const jwtGenerate = async (req, h) => {
     const { mobile, password } = req.payload
     const connection = await req.server.mysqlPool.getConnection()
-
+    let permissions = []
     try {
+        logger.info('Login')
         const [rows] = await getRecordById(
             'users',
             { username: mobile },
             connection
         )
-
-        if (R.isEmpty(rows)) {
+        console.log(rows)
+        if (!isNotEmpty(rows)) {
             throw messages.createNotFoundError('User not found')
         }
 
@@ -33,19 +38,43 @@ const jwtGenerate = async (req, h) => {
         if (!isPasswordValid) {
             throw messages.createNotFoundError('Invalid credentials')
         }
-
+        logger.info('Password Comparison')
         const randomKey = generateRandomKey(16)
         const redisClient = await buildRedisConnection()
+        const roles_setting = await getData(redisClient, `roles_json`)
+        logger.info('GET ROLE SETTING')
+        const menuSetting = roles_setting && JSON.parse(roles_setting)
+        const b = rows.role
 
-        let token = jwt.sign({ id: rows.id }, config.secret, {
-            expiresIn: config.JWTEXPIRE,
-        })
+        if (!rows.is_admin) {
+            if (
+                Object.keys(menuSetting).length > 0 &&
+                menuSetting['roles'] &&
+                menuSetting['roles'][b]
+            ) {
+                permissions = menuSetting.roles[b].permissions
+            } else {
+                throw messages.createNotFoundError('Invalid role settings !')
+            }
+        }
 
+        let token = jwt.sign(
+            { id: rows.id, is_admin: rows.is_admin, permissions },
+            config.secret,
+            {
+                expiresIn: config.JWTEXPIRE,
+            }
+        )
+
+        if (!rows.is_active) {
+            throw messages.createNotFoundError('User is not active !')
+        }
+        logger.info({ token, rows })
         token = encrypt(token, randomKey)
 
         const key = getStartAndEnd(token)
         await setData(redisClient, `ENCRYPT_${key}`, randomKey, 172800)
-
+        logger.info('SET DATA IN REDIS')
         const payload = {
             last_login: moment().format('YYYY-MM-DD HH:mm:ss'),
             login_count: rows.login_count + 1,
@@ -59,7 +88,7 @@ const jwtGenerate = async (req, h) => {
         return h
             .response(
                 messages.successResponse(
-                    { token, is_admin: rows.is_admin },
+                    { token },
                     `${mobile} is authenticated successfully!`
                 )
             )

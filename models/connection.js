@@ -26,17 +26,15 @@ const mysqlPlugin = {
             connection.release()
         } catch (error) {
             logger.error('MySQL connection test failed:', error)
-            process.exit(1) // Exit process if connection test fails
+            process.exit(1)
         }
 
-        // Expose MySQL pool in server's decorator
         server.decorate('server', 'mysqlPool', pool)
 
-        // Register onPreStop extension to stop MySQL connection pool
         server.ext('onPreStop', async () => {
-            logger.log('Stopping server. Closing MySQL connection pool...')
+            logger.info('Stopping server. Closing MySQL connection pool...')
             await pool.end()
-            logger.log('MySQL connection pool closed.')
+            logger.info('MySQL connection pool closed.')
         })
     },
 }

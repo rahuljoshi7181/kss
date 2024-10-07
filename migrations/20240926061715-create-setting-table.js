@@ -41,26 +41,7 @@ exports.up = function (db) {
                 ['setting_key', 'setting_value', 'setting_type'],
                 [
                     'roles_json',
-                    `{
-                  "roles": {
-                    "executive": {
-                      "permissions": [
-                        {
-                          "page_id": "4",
-                          "actions": ["read", "write", "update"]
-                        },
-                        {
-                          "page_id": "7",
-                          "actions": ["read", "write", "update"]
-                        },
-                        {
-                          "page_id": "9",
-                          "actions": ["read"]
-                        }
-                      ]
-                    }
-                  }
-                }`,
+                    `{"roles":{"executive":{"permissions":[{"page_id":"1","actions":["read","write","update"]},{"page_id":"7","actions":["read","write","update"]},{"page_id":"9","actions":["read"]}]}}}`,
                     'json',
                 ]
             )
